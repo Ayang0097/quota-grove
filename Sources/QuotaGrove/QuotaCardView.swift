@@ -16,7 +16,7 @@ protocol QuotaCardViewDelegate: AnyObject {
 }
 
 final class QuotaCardView: NSView {
-    static let ambientLeafInterval: TimeInterval = 5
+    static let ambientLeafInterval: TimeInterval = 3
 
     weak var delegate: QuotaCardViewDelegate?
 

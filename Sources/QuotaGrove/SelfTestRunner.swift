@@ -35,7 +35,7 @@ enum SelfTestRunner {
         expect(QuotaTheme.wasteland.borderAccent != QuotaTheme.wasteland.accent, "废土边框必须使用灰白色并与红色进度警示区分", report: &report)
         expect(QuotaTheme.forest.progressAccent != QuotaTheme.forest.accent, "森林进度条应使用比边框更鲜明的绿色", report: &report)
         expect(QuotaTheme.autumn.progressAccent == QuotaTheme.autumn.accent, "森林之外的主题应保留原有进度色", report: &report)
-        expect(QuotaCardView.ambientLeafInterval == 5, "环境落叶应每 5 秒检查并播放一次", report: &report)
+        expect(QuotaCardView.ambientLeafInterval == 3, "环境落叶应每 3 秒检查并播放一次", report: &report)
 
         do {
             let line = Data(#"{"timestamp":"2026-08-27T07:48:05.500Z","payload":{"type":"token_count","rate_limits":{"primary":{"used_percent":31.0,"window_minutes":10080,"resets_at":1788405013},"secondary":{"used_percent":8,"window_minutes":300,"resets_at":1787810000},"plan_type":"prolite"}}}"#.utf8)
