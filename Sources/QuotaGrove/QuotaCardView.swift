@@ -55,6 +55,16 @@ final class QuotaCardView: NSView {
     private var didDrag = false
     private var pendingSingleClick: DispatchWorkItem?
     private var hoverTrackingArea: NSTrackingArea?
+    private lazy var codexIcon: NSImage? = {
+        if let bundledURL = Bundle.main.url(forResource: "CodexIcon", withExtension: "png"),
+           let image = NSImage(contentsOf: bundledURL) {
+            return image
+        }
+
+        let developmentURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("Assets/CodexIcon.png")
+        return NSImage(contentsOf: developmentURL)
+    }()
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -410,7 +420,7 @@ final class QuotaCardView: NSView {
 
         let titleWidth = (title as NSString).size(withAttributes: [.font: titleFont]).width
         let markX = leftInset + titleWidth + 6
-        drawMark(at: NSPoint(x: markX, y: top - 29), size: 14)
+        drawCodexIcon(at: NSPoint(x: markX, y: top - 29), size: 14)
 
         let percent = snapshot.map { "\($0.roundedRemaining)%" } ?? "--%"
         let percentFont = NSFont.monospacedDigitSystemFont(ofSize: 25, weight: .regular)
@@ -472,7 +482,23 @@ final class QuotaCardView: NSView {
         }
     }
 
-    private func drawMark(at point: NSPoint, size: CGFloat) {
+    private func drawCodexIcon(at point: NSPoint, size: CGFloat) {
+        guard let codexIcon else {
+            drawFallbackMark(at: point, size: size)
+            return
+        }
+
+        codexIcon.draw(
+            in: NSRect(x: point.x, y: point.y, width: size, height: size),
+            from: .zero,
+            operation: .sourceOver,
+            fraction: 1,
+            respectFlipped: false,
+            hints: [.interpolation: NSImageInterpolation.high]
+        )
+    }
+
+    private func drawFallbackMark(at point: NSPoint, size: CGFloat) {
         let stroke = NSColor.white.withAlphaComponent(0.92)
         stroke.setStroke()
 
