@@ -6,7 +6,6 @@ enum PreviewRenderer {
         expanded: Bool,
         stashed: Bool = false,
         stashedEdge: StashedEdge = .right,
-        stale: Bool = false,
         to url: URL
     ) throws {
         let size = NSSize(
@@ -18,7 +17,6 @@ enum PreviewRenderer {
         view.isExpanded = expanded
         view.stashedEdge = stashedEdge
         view.isStashed = stashed
-        view.isStale = stale
         view.layoutSubtreeIfNeeded()
 
         let scale = 2

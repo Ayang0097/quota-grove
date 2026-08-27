@@ -56,10 +56,9 @@ final class CardWindowController: NSWindowController, QuotaCardViewDelegate {
         if let screenObserver { NotificationCenter.default.removeObserver(screenObserver) }
     }
 
-    func setSnapshot(_ snapshot: QuotaSnapshot?, stale: Bool) {
+    func setSnapshot(_ snapshot: QuotaSnapshot?) {
         let snapshotChanged = cardView.snapshot != snapshot
         if snapshotChanged { cardView.snapshot = snapshot }
-        cardView.isStale = stale
         if snapshotChanged, cardView.isStashed, let side = edgeSide {
             stash(to: side, animated: false, preserveFullFrame: true)
         }

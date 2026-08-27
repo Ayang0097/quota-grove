@@ -82,7 +82,7 @@ swift build
 
 OpenAI 目前没有为个人订阅公开稳定的“剩余百分比”API。本工具独立解析用户本机 `~/.codex/sessions` 中最近运行事件里的 `rate_limits` 字段，优先选择 10080 分钟的 7 天窗口。
 
-该字段属于本机兼容性适配，不是官方稳定接口。格式发生变化时，工具会保留最近可信快照并标记数据陈旧；从未取得过数据时显示 `--%`，不会猜测，也不会尝试绕过访问控制。详见 [data-source-notes.md](data-source-notes.md) 与 [PRIVACY.md](PRIVACY.md)。
+该字段属于本机兼容性适配，不是官方稳定接口。暂时无法取得新数据时，工具会继续显示最近可信快照；展开卡片可查看“数据更新”时间。从未取得过数据时显示 `--%`，不会猜测，也不会尝试绕过访问控制。详见 [data-source-notes.md](data-source-notes.md) 与 [PRIVACY.md](PRIVACY.md)。
 
 ## 独立实现声明
 

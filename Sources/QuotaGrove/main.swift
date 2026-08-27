@@ -35,7 +35,6 @@ private func renderPreview(arguments: [String]) -> Never {
     let expanded = arguments.contains("--expanded")
     let stashed = arguments.contains("--stashed")
     let stashedEdge: StashedEdge = arguments.contains("--left") ? .left : .right
-    let stale = arguments.contains("--stale")
     _ = NSApplication.shared
     do {
         try PreviewRenderer.render(
@@ -43,7 +42,6 @@ private func renderPreview(arguments: [String]) -> Never {
             expanded: expanded,
             stashed: stashed,
             stashedEdge: stashedEdge,
-            stale: stale,
             to: URL(fileURLWithPath: path)
         )
         print(path)

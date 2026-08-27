@@ -28,13 +28,6 @@ final class QuotaCardView: NSView {
             needsDisplay = true
         }
     }
-    var isStale = false {
-        didSet {
-            guard oldValue != isStale else { return }
-            updateAccessibility()
-            needsDisplay = true
-        }
-    }
     var isStashed = false {
         didSet {
             guard oldValue != isStashed else { return }
@@ -430,14 +423,9 @@ final class QuotaCardView: NSView {
 
         let percent = snapshot.map { "\($0.roundedRemaining)%" } ?? "--%"
         let percentFont = NSFont.monospacedDigitSystemFont(ofSize: 23, weight: .bold)
-        let percentWidth = (percent as NSString).size(withAttributes: [.font: percentFont]).width
-        let staleBadgeX = markX + 19
-        if isStale, staleBadgeX + 24 <= contentRight - percentWidth - 5 {
-            drawStaleBadge(at: NSPoint(x: staleBadgeX, y: top - 31))
-        }
 
         let resetText = summaryResetText()
-        drawText(resetText, at: NSPoint(x: leftInset, y: top - 48), font: .systemFont(ofSize: 10.5, weight: .medium), color: .white.withAlphaComponent(isStale ? 0.78 : 0.62))
+        drawText(resetText, at: NSPoint(x: leftInset, y: top - 48), font: .systemFont(ofSize: 10.5, weight: .medium), color: .white.withAlphaComponent(0.62))
 
         drawText(percent, at: NSPoint(x: contentRight, y: top - 39), font: percentFont, color: .white, alignment: .right)
         drawText("剩余", at: NSPoint(x: contentRight, y: top - 49), font: .systemFont(ofSize: 9.5, weight: .medium), color: .white.withAlphaComponent(0.62), alignment: .right)
@@ -543,23 +531,6 @@ final class QuotaCardView: NSView {
         leaf.stroke()
     }
 
-    private func drawStaleBadge(at point: NSPoint) {
-        let rect = NSRect(x: point.x, y: point.y, width: 24, height: 12)
-        let path = NSBezierPath(roundedRect: rect, xRadius: 6, yRadius: 6)
-        let amber = NSColor(calibratedRed: 1, green: 0.72, blue: 0.3, alpha: 1)
-        amber.withAlphaComponent(0.16).setFill()
-        path.fill()
-        amber.withAlphaComponent(0.58).setStroke()
-        path.lineWidth = 0.7
-        path.stroke()
-        drawText(
-            "陈旧",
-            at: NSPoint(x: rect.minX + 3.5, y: rect.minY + 1),
-            font: .systemFont(ofSize: 8.5, weight: .medium),
-            color: amber.withAlphaComponent(0.9)
-        )
-    }
-
     private enum TextAlignment { case left, right }
 
     private func drawText(_ text: String, at point: NSPoint, font: NSFont, color: NSColor, alignment: TextAlignment = .left) {
@@ -603,16 +574,15 @@ final class QuotaCardView: NSView {
         case 60..<3_600: value = "\(seconds / 60) 分钟前"
         default: value = "\(seconds / 3_600) 小时前"
         }
-        return isStale ? "\(value) · 陈旧" : value
+        return value
     }
 
     private func updateAccessibility() {
         let title = snapshot?.windowTitle ?? "7 天额度"
         let percent = snapshot.map { "剩余 \($0.roundedRemaining)%" } ?? "等待额度数据"
         let state = snapshot.map { QuotaTheme.select(for: $0.remainingPercent).accessibilityName } ?? "暂无数据"
-        let stale = isStale ? "，数据可能已过期" : ""
         let mode = isStashed ? "已收纳，悬停显示完整卡片" : "单击\(isExpanded ? "收起" : "展开")，双击刷新"
-        setAccessibilityLabel("\(title)，\(percent)，\(state)\(stale)。\(mode)。")
+        setAccessibilityLabel("\(title)，\(percent)，\(state)。\(mode)。")
         setAccessibilityValue(snapshot?.remainingPercent as NSNumber?)
         setAccessibilityHelp("可拖动卡片；拖到屏幕左侧或右侧可收纳。右键打开菜单。")
     }

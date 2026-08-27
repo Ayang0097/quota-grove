@@ -20,7 +20,7 @@ NSApplication (.accessory)
 3. 适配器先以文本常量过滤 `rate_limits` 行，再用 `JSONSerialization` 解析目标字段。
 4. 选择 10080 分钟窗口，验证百分比范围，生成不可变 `QuotaSnapshot`。
 5. 窗口控制器将快照传给纯绘制视图；视图按剩余百分比选择主题。
-6. 成功快照保存到 UserDefaults。数据源暂时失败时继续显示快照并标陈旧。
+6. 成功快照保存到 UserDefaults。数据源暂时失败时继续显示最近快照，展开态通过数据更新时间体现新旧。
 
 ## 性能策略
 

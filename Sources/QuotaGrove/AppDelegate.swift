@@ -16,13 +16,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let controller = CardWindowController()
         windowController = controller
         currentSnapshot = QuotaSnapshotCache.load()
-        updateCard(staleOverride: currentSnapshot != nil)
+        updateCard()
         controller.onRefresh = { [weak self] in self?.refreshQuota(force: true) }
 
         if let demoValue = commandLineDemoValue() {
             codexIsRunning = true
             currentSnapshot = .demo(remainingPercent: demoValue)
-            updateCard(staleOverride: false)
+            updateCard()
             controller.showCard()
             return
         }
@@ -45,7 +45,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let refreshTimer { RunLoop.main.add(refreshTimer, forMode: .common) }
 
         clockTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
-            self?.updateCard(staleOverride: nil)
             self?.windowController?.refreshClock()
         }
         if let clockTimer { RunLoop.main.add(clockTimer, forMode: .common) }
@@ -72,17 +71,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 if let snapshot {
                     self.currentSnapshot = snapshot
                     QuotaSnapshotCache.save(snapshot)
-                    self.updateCard(staleOverride: nil)
+                    self.updateCard()
                 } else {
-                    self.updateCard(staleOverride: self.currentSnapshot != nil)
+                    self.updateCard()
                 }
             }
         }
     }
 
-    private func updateCard(staleOverride: Bool?) {
-        let stale = staleOverride ?? currentSnapshot.map { Date().timeIntervalSince($0.fetchedAt) > 180 } ?? false
-        windowController?.setSnapshot(currentSnapshot, stale: stale)
+    private func updateCard() {
+        windowController?.setSnapshot(currentSnapshot)
     }
 
     private func commandLineDemoValue() -> Double? {
