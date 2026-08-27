@@ -26,7 +26,13 @@ Quota Grove 是一个原生 macOS 桌面悬浮卡片，用环境变化显示本�
 - Apple Silicon Mac（当前构建为 arm64）。
 - 本机 Codex/ChatGPT 桌面客户端产生过含额度状态的运行事件。
 
-## 安装
+## 下载与安装
+
+前往 [GitHub Releases](https://github.com/Ayang0097/quota-grove/releases/latest) 下载最新版 `Quota-Grove-*-macos-arm64.zip`，解压后将 `Quota Grove.app` 拖入“应用程序”文件夹并启动。
+
+当前公开构建采用 ad-hoc 签名，尚未经过 Apple Developer ID 公证。首次打开时如果 macOS 提示无法验证开发者，请在 Finder 中按住 Control 点击应用，选择“打开”，然后再次确认“打开”。
+
+## 从源码安装
 
 在项目目录运行：
 
