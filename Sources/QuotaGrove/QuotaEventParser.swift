@@ -25,6 +25,15 @@ enum QuotaEventParser {
             return nil
         }
 
+        // Codex can emit separate rate-limit events for individual models. The
+        // card represents the account-wide Codex quota, so model-specific
+        // limits (for example, codex_bengalfox) must not replace it.
+        if let limitID = limits["limit_id"] as? String,
+           !limitID.isEmpty,
+           limitID != "codex" {
+            return nil
+        }
+
         let windows = ["primary", "secondary"].compactMap { key -> Window? in
             guard let value = limits[key] as? [String: Any] else { return nil }
             return Window(dictionary: value)

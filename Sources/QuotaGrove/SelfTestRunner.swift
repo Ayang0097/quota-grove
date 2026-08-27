@@ -38,7 +38,7 @@ enum SelfTestRunner {
         expect(QuotaCardView.ambientLeafInterval == 3, "环境落叶应每 3 秒检查并播放一次", report: &report)
 
         do {
-            let line = Data(#"{"timestamp":"2026-08-27T07:48:05.500Z","payload":{"type":"token_count","rate_limits":{"primary":{"used_percent":31.0,"window_minutes":10080,"resets_at":1788405013},"secondary":{"used_percent":8,"window_minutes":300,"resets_at":1787810000},"plan_type":"prolite"}}}"#.utf8)
+            let line = Data(#"{"timestamp":"2026-08-27T07:48:05.500Z","payload":{"type":"token_count","rate_limits":{"limit_id":"codex","primary":{"used_percent":31.0,"window_minutes":10080,"resets_at":1788405013},"secondary":{"used_percent":8,"window_minutes":300,"resets_at":1787810000},"plan_type":"prolite"}}}"#.utf8)
             let snapshot = try QuotaEventParser.parse(line: line)
             expect(snapshot?.windowMinutes == 10_080, "优先选择 7 天窗口", report: &report)
             expect(snapshot?.remainingPercent == 69, "剩余百分比应由已用百分比计算", report: &report)
@@ -50,6 +50,9 @@ enum SelfTestRunner {
 
         let unrelated = Data(#"{"payload":{"type":"message","text":"not quota data"}}"#.utf8)
         expect(try QuotaEventParser.parse(line: unrelated) == nil, "无关事件必须忽略", report: &report)
+
+        let modelSpecific = Data(#"{"timestamp":"2026-08-27T14:08:32.668Z","payload":{"type":"token_count","rate_limits":{"limit_id":"codex_bengalfox","limit_name":"GPT-5.3-Codex-Spark","primary":{"used_percent":0,"window_minutes":300},"secondary":{"used_percent":0,"window_minutes":10080},"plan_type":"prolite"}}}"#.utf8)
+        expect(try QuotaEventParser.parse(line: modelSpecific) == nil, "单独模型额度不得覆盖 Codex 总额度", report: &report)
 
         do {
             let invalid = Data(#"{"payload":{"rate_limits":{"primary":{"used_percent":101,"window_minutes":10080}}}}"#.utf8)

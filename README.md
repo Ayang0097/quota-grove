@@ -91,7 +91,7 @@ macOS 应用附带两个不启动窗口的诊断命令：
 "~/Applications/Quota Grove.app/Contents/MacOS/QuotaGrove" --self-test
 ```
 
-`--snapshot-json` 只输出标准化额度快照。`--self-test` 覆盖 40 项主题边界、视觉规则、落叶粒子密度与景深、解析和中英文切换检查，包括 PRD 指定的 50、49、20、19、3、2、1、0 八个主题边界。
+`--snapshot-json` 只输出标准化额度快照。`--self-test` 覆盖 41 项主题边界、视觉规则、落叶粒子密度与景深、解析和中英文切换检查，包括 PRD 指定的 50、49、20、19、3、2、1、0 八个主题边界。
 
 ## 手动构建
 
