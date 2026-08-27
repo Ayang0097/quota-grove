@@ -10,13 +10,13 @@ Quota Grove 是一个原生 macOS 桌面悬浮卡片，用环境变化显示本�
 
 卡片会根据 7 天剩余额度切换环境，背景、边框颜色和进度条保持一致：`50–100%` 为森林、`20–49%` 为秋天、`3–19%` 为末日、`0–2%` 为废土。
 
-![Quota Grove 不同额度主题效果](docs/screenshots/quota-grove-themes.png)
+![Quota Grove quota theme showcase](docs/screenshots/quota-grove-themes-en-v101.png)
 
 ### 收起、展开与贴边隐藏
 
 收起状态保留核心额度信息；单击卡片展开订阅计划和数据更新时间；拖到屏幕左右边缘后自动收纳成 16 pt 的深色主题切片，悬停时完整卡片会临时滑出。
 
-![Quota Grove 收起、展开与贴边隐藏效果](docs/screenshots/quota-grove-modes.png)
+![Quota Grove compact, expanded, and edge-stashed states](docs/screenshots/quota-grove-modes-en-v101.png)
 
 ## 特点
 

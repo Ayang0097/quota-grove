@@ -29,7 +29,7 @@
 
 ## README 展示图
 
-- 文件：`docs/screenshots/quota-grove-themes.png`、`docs/screenshots/quota-grove-modes.png`。
+- 文件：`docs/screenshots/quota-grove-themes-en-v101.png`、`docs/screenshots/quota-grove-modes-en-v101.png`。
 - 来源：由 `Scripts/render-readme-showcase.swift` 调用应用内置的真实预览渲染器生成卡片，再使用 Apple AppKit 合成展示画布。
 - 内容：展示四个额度主题，以及收起、展开和贴边隐藏三种界面形态。
 - 字体：仅使用 macOS 系统字体，不额外捆绑字体文件。

@@ -145,8 +145,8 @@ private func renderThemeShowcase(samples: [ThemeSample]) -> NSImage {
     let size = NSSize(width: 1600, height: 520)
     return drawCanvas(size: size) { _ in
         drawHeader(
-            title: "额度变化，卡片环境也随之变化",
-            subtitle: "背景、边框和进度条会按 7 天剩余额度同步切换",
+            title: "The landscape changes with your quota",
+            subtitle: "Background, border, and progress state respond to your remaining 7-day quota",
             width: size.width
         )
 
@@ -180,7 +180,7 @@ private func renderThemeShowcase(samples: [ThemeSample]) -> NSImage {
 
             drawImage(sample.image, in: NSRect(x: x + 15, y: 244, width: 320, height: 128))
             drawText(
-                "示例剩余 \(sample.percent)%",
+                "\(sample.percent)% remaining",
                 in: NSRect(x: x + 24, y: 400, width: panelWidth - 48, height: 30),
                 font: .monospacedDigitSystemFont(ofSize: 16, weight: .regular),
                 color: palette.muted,
@@ -194,8 +194,8 @@ private func renderModeShowcase(collapsed: NSImage, expanded: NSImage, stashed: 
     let size = NSSize(width: 1600, height: 760)
     return drawCanvas(size: size) { _ in
         drawHeader(
-            title: "三种展示形态",
-            subtitle: "收起查看核心信息，单击展开详情，拖到屏幕边缘自动隐藏",
+            title: "Three display states",
+            subtitle: "Keep the essentials compact, expand for details, or stash the card at the screen edge",
             width: size.width
         )
 
@@ -204,8 +204,8 @@ private func renderModeShowcase(collapsed: NSImage, expanded: NSImage, stashed: 
             NSRect(x: 560, y: 164, width: 480, height: 520),
             NSRect(x: 1070, y: 164, width: 480, height: 520)
         ]
-        let titles = ["收起", "展开", "贴边隐藏"]
-        let captions = ["保留额度、重置时间和进度", "查看订阅计划与数据更新时间", "悬停时完整卡片会临时滑出"]
+        let titles = ["Compact", "Expanded", "Edge-stashed"]
+        let captions = ["Quota, reset time, and progress", "Plan details and last data update", "Hover to slide the full card back out"]
 
         for index in panels.indices {
             roundedRect(panels[index], radius: 28, fill: palette.panel, stroke: palette.panelStroke)
@@ -247,7 +247,7 @@ private func renderModeShowcase(collapsed: NSImage, expanded: NSImage, stashed: 
             shadow: true
         )
         drawText(
-            "屏幕边缘",
+            "Screen edge",
             in: NSRect(x: desktopRect.maxX - 145, y: desktopRect.minY + 24, width: 110, height: 26),
             font: .systemFont(ofSize: 15, weight: .medium),
             color: NSColor(calibratedWhite: 0.22, alpha: 0.76),
@@ -275,17 +275,17 @@ do {
     defer { try? fileManager.removeItem(at: temporaryDirectory) }
 
     let samples = try [
-        ThemeSample(percent: 82, title: "额度充足", range: "50–100%", accent: NSColor(calibratedRed: 0.47, green: 0.88, blue: 0.67, alpha: 1), image: runPreview(percent: 82, name: "forest")),
-        ThemeSample(percent: 38, title: "额度偏低", range: "20–49%", accent: NSColor(calibratedRed: 0.96, green: 0.72, blue: 0.29, alpha: 1), image: runPreview(percent: 38, name: "autumn")),
-        ThemeSample(percent: 12, title: "额度紧张", range: "3–19%", accent: NSColor(calibratedRed: 0.94, green: 0.29, blue: 0.28, alpha: 1), image: runPreview(percent: 12, name: "apocalypse")),
-        ThemeSample(percent: 1, title: "即将耗尽", range: "0–2%", accent: NSColor(calibratedWhite: 0.94, alpha: 1), image: runPreview(percent: 1, name: "wasteland"))
+        ThemeSample(percent: 82, title: "Healthy", range: "50–100%", accent: NSColor(calibratedRed: 0.47, green: 0.88, blue: 0.67, alpha: 1), image: runPreview(percent: 82, name: "forest")),
+        ThemeSample(percent: 38, title: "Reduced", range: "20–49%", accent: NSColor(calibratedRed: 0.96, green: 0.72, blue: 0.29, alpha: 1), image: runPreview(percent: 38, name: "autumn")),
+        ThemeSample(percent: 12, title: "Low", range: "3–19%", accent: NSColor(calibratedRed: 0.94, green: 0.29, blue: 0.28, alpha: 1), image: runPreview(percent: 12, name: "apocalypse")),
+        ThemeSample(percent: 1, title: "Nearly depleted", range: "0–2%", accent: NSColor(calibratedWhite: 0.94, alpha: 1), image: runPreview(percent: 1, name: "wasteland"))
     ]
     let collapsed = try runPreview(percent: 54, name: "collapsed")
     let expanded = try runPreview(percent: 54, name: "expanded", expanded: true)
     let stashed = try runPreview(percent: 54, name: "stashed", stashed: true)
 
-    let themeURL = outputDirectory.appendingPathComponent("quota-grove-themes.png")
-    let modeURL = outputDirectory.appendingPathComponent("quota-grove-modes.png")
+    let themeURL = outputDirectory.appendingPathComponent("quota-grove-themes-en-v101.png")
+    let modeURL = outputDirectory.appendingPathComponent("quota-grove-modes-en-v101.png")
     try writePNG(renderThemeShowcase(samples: samples), to: themeURL)
     try writePNG(renderModeShowcase(collapsed: collapsed, expanded: expanded, stashed: stashed), to: modeURL)
 
