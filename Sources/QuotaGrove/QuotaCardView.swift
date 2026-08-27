@@ -16,10 +16,19 @@ protocol QuotaCardViewDelegate: AnyObject {
 }
 
 final class QuotaCardView: NSView {
+    static let ambientLeafInterval: TimeInterval = 5
+
     weak var delegate: QuotaCardViewDelegate?
 
     var snapshot: QuotaSnapshot? {
-        didSet { updateAccessibility(); needsDisplay = true }
+        didSet {
+            if let previous = oldValue, let current = snapshot {
+                let percentageDrop = previous.roundedRemaining - current.roundedRemaining
+                if percentageDrop > 0 { emitFallingLeaves(forPercentageDrop: percentageDrop) }
+            }
+            updateAccessibility()
+            needsDisplay = true
+        }
     }
     var isExpanded = false {
         didSet {
@@ -48,6 +57,10 @@ final class QuotaCardView: NSView {
     private var didDrag = false
     private var pendingSingleClick: DispatchWorkItem?
     private var hoverTrackingArea: NSTrackingArea?
+    private var leafParticles = LeafParticleSystem()
+    private var leafAnimationTimer: Timer?
+    private var ambientLeafTimer: Timer?
+    private var previousLeafTick: TimeInterval = 0
     private lazy var codexIcon: NSImage? = {
         if let bundledURL = Bundle.main.url(forResource: "CodexIcon", withExtension: "png"),
            let image = NSImage(contentsOf: bundledURL) {
@@ -70,6 +83,11 @@ final class QuotaCardView: NSView {
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    deinit {
+        leafAnimationTimer?.invalidate()
+        ambientLeafTimer?.invalidate()
     }
 
     override var acceptsFirstResponder: Bool { false }
@@ -147,6 +165,32 @@ final class QuotaCardView: NSView {
         needsDisplay = true
     }
 
+    func advanceLeafAnimationForPreview(by deltaTime: TimeInterval) {
+        leafParticles.advance(by: deltaTime)
+        needsDisplay = true
+    }
+
+    func setAmbientLeafAnimationActive(_ active: Bool) {
+        if !active {
+            ambientLeafTimer?.invalidate()
+            ambientLeafTimer = nil
+            return
+        }
+        guard ambientLeafTimer == nil else { return }
+
+        let timer = Timer(timeInterval: Self.ambientLeafInterval, repeats: true) { [weak self] _ in
+            self?.playAmbientLeafAnimationIfPossible()
+        }
+        ambientLeafTimer = timer
+        RunLoop.main.add(timer, forMode: .common)
+    }
+
+    private func playAmbientLeafAnimationIfPossible() {
+        guard snapshot != nil else { return }
+        guard window?.isVisible == true, !isStashed, leafParticles.isEmpty else { return }
+        emitFallingLeaves(forPercentageDrop: 1)
+    }
+
     private func drawStashedBar() {
         // Extend the rounded card beyond the screen edge, leaving a single
         // curved slice visible instead of an isolated progress capsule.
@@ -203,10 +247,10 @@ final class QuotaCardView: NSView {
         let fill = NSBezierPath(roundedRect: fillRect, xRadius: 2.5, yRadius: 2.5)
         NSGraphicsContext.saveGraphicsState()
         fill.addClip()
-        let accent = snapshot.map { QuotaTheme.select(for: $0.remainingPercent).accent } ?? .white
+        let accent = snapshot.map { QuotaTheme.select(for: $0.remainingPercent).progressAccent } ?? .white
         NSGradient(
-            starting: accent.blended(withFraction: 0.32, of: .black) ?? accent,
-            ending: accent.blended(withFraction: 0.08, of: .black) ?? accent
+            starting: accent.blended(withFraction: 0.40, of: .black) ?? accent,
+            ending: accent.blended(withFraction: 0.16, of: .black) ?? accent
         )?.draw(in: fillRect, angle: 90)
         NSGraphicsContext.restoreGraphicsState()
 
@@ -223,6 +267,7 @@ final class QuotaCardView: NSView {
         clip.addClip()
         drawEnvironment(in: bounds)
         drawReadabilityOverlay(in: bounds)
+        drawFallingLeaves()
         NSGraphicsContext.restoreGraphicsState()
 
         currentBorderColor.setStroke()
@@ -231,6 +276,283 @@ final class QuotaCardView: NSView {
 
         drawSummary()
         if isExpanded { drawDetails() }
+    }
+
+    private func emitFallingLeaves(forPercentageDrop drop: Int) {
+        guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
+        leafParticles.emit(forPercentageDrop: drop, in: bounds.size)
+        guard leafAnimationTimer == nil else { return }
+
+        previousLeafTick = ProcessInfo.processInfo.systemUptime
+        let timer = Timer(timeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            let now = ProcessInfo.processInfo.systemUptime
+            self.leafParticles.advance(by: now - self.previousLeafTick)
+            self.previousLeafTick = now
+            self.needsDisplay = true
+            if self.leafParticles.isEmpty {
+                self.leafAnimationTimer?.invalidate()
+                self.leafAnimationTimer = nil
+            }
+        }
+        leafAnimationTimer = timer
+        RunLoop.main.add(timer, forMode: .common)
+    }
+
+    private func drawFallingLeaves() {
+        guard !leafParticles.isEmpty else { return }
+        let palette = leafPalette(for: currentTheme)
+        let visibleLeaves = leafParticles.leaves
+            .filter(\.isVisible)
+            .sorted { $0.depth < $1.depth }
+
+        for leaf in visibleLeaves {
+            if let sprite = LeafSpriteStore.shared.image(
+                for: currentTheme,
+                variant: leaf.colorVariant,
+                softened: leaf.focus != .crisp
+            ) {
+                drawLeafSprite(leaf, image: sprite)
+                continue
+            }
+
+            NSGraphicsContext.saveGraphicsState()
+            let transform = NSAffineTransform()
+            transform.translateX(by: leaf.renderedX, yBy: leaf.position.y)
+            transform.rotate(byDegrees: leaf.rotation)
+            let flutterScale = 0.56 + abs(cos(leaf.swayPhase * 0.72)) * 0.44
+            let depthScale = 0.62 + leaf.depth * 0.68
+            transform.scaleX(by: flutterScale * depthScale, yBy: depthScale)
+            transform.concat()
+
+            let width = leaf.size
+            let halfHeightFactors: [CGFloat] = [0.3, 0.23, 0.36]
+            let halfHeight = leaf.size * halfHeightFactors[leaf.colorVariant % halfHeightFactors.count]
+            let baseX = -width * 0.4
+            let tipX = width * 0.58
+            let leafOpacity = leaf.opacity * (0.48 + leaf.depth * 0.52)
+            let shape = NSBezierPath()
+            shape.move(to: NSPoint(x: baseX, y: 0))
+            shape.curve(
+                to: NSPoint(x: tipX, y: 0),
+                controlPoint1: NSPoint(x: -width * 0.16, y: halfHeight * 1.06),
+                controlPoint2: NSPoint(x: width * 0.34, y: halfHeight * 0.94)
+            )
+            shape.curve(
+                to: NSPoint(x: baseX, y: 0),
+                controlPoint1: NSPoint(x: width * 0.3, y: -halfHeight * 0.9),
+                controlPoint2: NSPoint(x: -width * 0.2, y: -halfHeight * 1.02)
+            )
+            shape.close()
+
+            let paletteColor = palette[leaf.colorVariant % palette.count]
+            let distanceShade = (1 - leaf.depth) * 0.2
+            let baseColor = paletteColor.blended(withFraction: distanceShade, of: .black) ?? paletteColor
+            let shadowColor = baseColor.blended(withFraction: 0.28, of: .black) ?? baseColor
+            let shadow = NSShadow()
+            shadow.shadowColor = NSColor.black.withAlphaComponent((0.12 + leaf.depth * 0.2) * leafOpacity)
+            shadow.shadowBlurRadius = 0.7 + leaf.depth * 1.1
+            shadow.shadowOffset = NSSize(width: 0.4 + leaf.depth * 0.4, height: -0.5 - leaf.depth * 0.5)
+            shadow.set()
+            shadowColor.withAlphaComponent(0.96 * leafOpacity).setFill()
+            shape.fill()
+
+            NSShadow().set()
+            NSGraphicsContext.saveGraphicsState()
+            shape.addClip()
+            let dark = (baseColor.blended(withFraction: 0.3, of: .black) ?? baseColor)
+                .withAlphaComponent(0.96 * leafOpacity)
+            let light = (baseColor.blended(withFraction: 0.2, of: .white) ?? baseColor)
+                .withAlphaComponent(0.98 * leafOpacity)
+            NSGradient(colors: [dark, baseColor.withAlphaComponent(0.98 * leafOpacity), light])?
+                .draw(
+                    in: NSRect(x: baseX, y: -halfHeight * 1.1, width: tipX - baseX, height: halfHeight * 2.2),
+                    angle: 78
+                )
+            NSGraphicsContext.restoreGraphicsState()
+
+            (baseColor.blended(withFraction: 0.5, of: .black) ?? baseColor)
+                .withAlphaComponent(0.72 * leafOpacity)
+                .setStroke()
+            shape.lineWidth = 0.72
+            shape.stroke()
+
+            let veinColor = (baseColor.blended(withFraction: 0.55, of: .black) ?? baseColor)
+                .withAlphaComponent((0.56 + leaf.depth * 0.24) * leafOpacity)
+            veinColor.setStroke()
+
+            let petiole = NSBezierPath()
+            petiole.move(to: NSPoint(x: baseX - width * 0.18, y: -halfHeight * 0.04))
+            petiole.curve(
+                to: NSPoint(x: baseX + width * 0.05, y: 0),
+                controlPoint1: NSPoint(x: baseX - width * 0.1, y: halfHeight * 0.03),
+                controlPoint2: NSPoint(x: baseX - width * 0.03, y: -halfHeight * 0.03)
+            )
+            petiole.lineWidth = 0.85
+            petiole.lineCapStyle = .round
+            petiole.stroke()
+
+            let vein = NSBezierPath()
+            vein.move(to: NSPoint(x: baseX - width * 0.02, y: 0))
+            vein.curve(
+                to: NSPoint(x: tipX - width * 0.08, y: 0),
+                controlPoint1: NSPoint(x: -width * 0.05, y: halfHeight * 0.08),
+                controlPoint2: NSPoint(x: width * 0.3, y: -halfHeight * 0.05)
+            )
+            vein.lineWidth = 0.78
+            vein.lineCapStyle = .round
+            vein.stroke()
+
+            if leaf.depth > 0.3 {
+                let branchCount = leaf.depth > 0.68 ? 4 : 3
+                for branchIndex in 1...branchCount {
+                    let progress = CGFloat(branchIndex) / CGFloat(branchCount + 1)
+                    let x = baseX + (tipX - baseX) * progress
+                    let reach = (1 - progress * 0.5) * halfHeight
+                    let branch = NSBezierPath()
+                    branch.move(to: NSPoint(x: x, y: 0))
+                    branch.line(to: NSPoint(x: x + width * 0.095, y: reach * 0.7))
+                    branch.move(to: NSPoint(x: x, y: 0))
+                    branch.line(to: NSPoint(x: x + width * 0.075, y: -reach * 0.64))
+                    branch.lineWidth = 0.38
+                    branch.lineCapStyle = .round
+                    veinColor.withAlphaComponent(0.52 * leafOpacity).setStroke()
+                    branch.stroke()
+                }
+            }
+
+            if leaf.depth > 0.62 {
+                let rimLight = NSBezierPath()
+                rimLight.move(to: NSPoint(x: baseX + width * 0.08, y: halfHeight * 0.16))
+                rimLight.curve(
+                    to: NSPoint(x: tipX - width * 0.12, y: halfHeight * 0.08),
+                    controlPoint1: NSPoint(x: -width * 0.08, y: halfHeight * 0.86),
+                    controlPoint2: NSPoint(x: width * 0.3, y: halfHeight * 0.7)
+                )
+                (baseColor.blended(withFraction: 0.55, of: .white) ?? baseColor)
+                    .withAlphaComponent((0.18 + leaf.depth * 0.12) * leafOpacity)
+                    .setStroke()
+                rimLight.lineWidth = 0.9
+                rimLight.lineCapStyle = .round
+                rimLight.stroke()
+            }
+            NSGraphicsContext.restoreGraphicsState()
+        }
+    }
+
+    private func drawLeafSprite(_ leaf: FallingLeaf, image: NSImage) {
+        let baseOpacity = leaf.opacity * (0.54 + leaf.depth * 0.46)
+        let speed = max(1, hypot(leaf.velocity.dx, leaf.velocity.dy))
+        let trail = CGVector(
+            dx: -leaf.velocity.dx / speed * leaf.motionTrail,
+            dy: -leaf.velocity.dy / speed * leaf.motionTrail
+        )
+
+        switch leaf.focus {
+        case .crisp:
+            drawLeafSpritePass(
+                leaf,
+                image: image,
+                offset: .zero,
+                opacity: 0.92 * baseOpacity,
+                castsShadow: true
+            )
+        case .soft:
+            drawLeafSpritePass(
+                leaf,
+                image: image,
+                offset: .zero,
+                opacity: 0.76 * baseOpacity,
+                castsShadow: false
+            )
+        case .motion:
+            let trailFractions: [CGFloat] = [1, 0.72, 0.46, 0.22]
+            let trailOpacities: [CGFloat] = [0.09, 0.115, 0.145, 0.175]
+            for (fraction, opacity) in zip(trailFractions, trailOpacities) {
+                drawLeafSpritePass(
+                    leaf,
+                    image: image,
+                    offset: NSSize(width: trail.dx * fraction, height: trail.dy * fraction),
+                    opacity: opacity * baseOpacity,
+                    castsShadow: false
+                )
+            }
+            drawLeafSpritePass(
+                leaf,
+                image: image,
+                offset: .zero,
+                opacity: 0.36 * baseOpacity,
+                castsShadow: false
+            )
+        }
+    }
+
+    private func drawLeafSpritePass(
+        _ leaf: FallingLeaf,
+        image: NSImage,
+        offset: NSSize,
+        opacity: CGFloat,
+        castsShadow: Bool
+    ) {
+        NSGraphicsContext.saveGraphicsState()
+        let transform = NSAffineTransform()
+        transform.translateX(by: leaf.renderedX + offset.width, yBy: leaf.position.y + offset.height)
+        transform.rotate(byDegrees: leaf.rotation)
+        let flutterScale = 0.32 + abs(cos(leaf.swayPhase * 0.76)) * 0.68
+        let depthScale = 0.72 + leaf.depth * 0.56
+        transform.scaleX(by: flutterScale * depthScale, yBy: depthScale)
+        transform.concat()
+
+        if castsShadow {
+            let shadow = NSShadow()
+            shadow.shadowColor = NSColor.black.withAlphaComponent(0.18 * leaf.opacity)
+            shadow.shadowBlurRadius = 0.75
+            shadow.shadowOffset = NSSize(width: 0.35, height: -0.45)
+            shadow.set()
+        }
+
+        let naturalSize = image.size
+        let aspect = naturalSize.width / max(1, naturalSize.height)
+        let targetHeight = leaf.size
+        let targetWidth = targetHeight * aspect
+        image.draw(
+            in: NSRect(x: -targetWidth / 2, y: -targetHeight / 2, width: targetWidth, height: targetHeight),
+            from: .zero,
+            operation: .sourceOver,
+            fraction: opacity,
+            respectFlipped: false,
+            hints: [.interpolation: NSImageInterpolation.high]
+        )
+        NSGraphicsContext.restoreGraphicsState()
+    }
+
+    private func leafPalette(for theme: QuotaTheme) -> [NSColor] {
+        switch theme {
+        case .forest:
+            return [
+                NSColor(calibratedRed: 0.4, green: 0.78, blue: 0.43, alpha: 1),
+                NSColor(calibratedRed: 0.55, green: 0.86, blue: 0.5, alpha: 1),
+                NSColor(calibratedRed: 0.28, green: 0.66, blue: 0.36, alpha: 1)
+            ]
+        case .autumn:
+            return [
+                NSColor(calibratedRed: 1, green: 0.64, blue: 0.18, alpha: 1),
+                NSColor(calibratedRed: 0.82, green: 0.32, blue: 0.08, alpha: 1),
+                NSColor(calibratedRed: 0.96, green: 0.44, blue: 0.1, alpha: 1)
+            ]
+        case .apocalypse:
+            return [
+                NSColor(calibratedRed: 0.7, green: 0.18, blue: 0.14, alpha: 1),
+                NSColor(calibratedRed: 0.58, green: 0.52, blue: 0.43, alpha: 1),
+                NSColor(calibratedRed: 0.86, green: 0.3, blue: 0.18, alpha: 1)
+            ]
+        case .wasteland:
+            return [
+                NSColor(calibratedRed: 0.76, green: 0.72, blue: 0.62, alpha: 1),
+                NSColor(calibratedRed: 0.54, green: 0.51, blue: 0.45, alpha: 1),
+                NSColor(calibratedRed: 0.86, green: 0.82, blue: 0.72, alpha: 1)
+            ]
+        }
     }
 
     private var currentTheme: QuotaTheme {
@@ -443,10 +765,10 @@ final class QuotaCardView: NSView {
         let fill = NSBezierPath(roundedRect: fillRect, xRadius: 2.5, yRadius: 2.5)
         NSGraphicsContext.saveGraphicsState()
         fill.addClip()
-        let accent = currentTheme.accent
-        let leading = accent.blended(withFraction: 0.42, of: .black) ?? accent
-        let middle = accent.blended(withFraction: 0.14, of: .black) ?? accent
-        let trailing = accent.blended(withFraction: 0.08, of: .white) ?? accent
+        let accent = currentTheme.progressAccent
+        let leading = accent.blended(withFraction: 0.50, of: .black) ?? accent
+        let middle = accent.blended(withFraction: 0.22, of: .black) ?? accent
+        let trailing = accent.blended(withFraction: 0.04, of: .black) ?? accent
         NSGradient(colors: [leading, middle, trailing])?.draw(in: fillRect, angle: 0)
         NSGraphicsContext.restoreGraphicsState()
     }

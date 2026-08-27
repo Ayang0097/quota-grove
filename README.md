@@ -12,6 +12,12 @@ Quota Grove 是一个支持 macOS 与 Windows 的桌面悬浮卡片，用环境�
 
 ![Quota Grove quota theme showcase](docs/screenshots/quota-grove-themes-en-v101.png)
 
+### 主题同步落叶动效
+
+macOS 卡片会在额度下降时播放落叶，并在卡片可见且系统未开启“减少动态效果”时，每 5 秒自动播放一次轻量环境动效。叶片颜色跟随当前额度主题：森林为鲜绿、秋林为橙红、末日为暗红褐、废土为灰白。
+
+![Quota Grove theme-synced falling leaf animation](docs/screenshots/quota-grove-leaf-animation.gif)
+
 ### 收起、展开与贴边隐藏
 
 收起状态保留核心额度信息；单击卡片展开订阅计划和数据更新时间；拖到屏幕左右边缘后自动收纳成 16 pt 的深色主题切片，悬停时完整卡片会临时滑出。
@@ -22,6 +28,7 @@ Quota Grove 是一个支持 macOS 与 Windows 的桌面悬浮卡片，用环境�
 
 - macOS 为 `200 × 80 pt` 收起、`200 × 178 pt` 展开；Windows 为 `400 × 160 DIP` 收起、`400 × 356 DIP` 展开。
 - 森林、秋天、末日、废土四套本地绘制主题。
+- macOS 支持额度下降触发和每 5 秒一次的轻量落叶动效；叶片颜色、进度条和边框与当前主题同步。
 - 根据系统首选显示语言自动使用中文或英文；中文系统显示中文，其他系统默认显示英文。
 - 双击刷新；单击与双击互不误触。
 - 任意位置拖动并记住位置；贴到屏幕左右边缘后收纳成 16 pt 的深色主题卡片切片，内嵌竖向额度条。
@@ -84,7 +91,7 @@ macOS 应用附带两个不启动窗口的诊断命令：
 "~/Applications/Quota Grove.app/Contents/MacOS/QuotaGrove" --self-test
 ```
 
-`--snapshot-json` 只输出标准化额度快照。`--self-test` 覆盖 28 项主题边界、视觉规则、解析和中英文切换检查，包括 PRD 指定的 50、49、20、19、3、2、1、0 八个主题边界。
+`--snapshot-json` 只输出标准化额度快照。`--self-test` 覆盖 40 项主题边界、视觉规则、落叶粒子密度与景深、解析和中英文切换检查，包括 PRD 指定的 50、49、20、19、3、2、1、0 八个主题边界。
 
 ## 手动构建
 
@@ -111,7 +118,7 @@ OpenAI 目前没有为个人订阅公开稳定的“剩余百分比”API。本�
 
 ## 独立实现声明
 
-本项目依据 `Quota-Grove-PRD.md` 从空目录独立实现，没有读取、复制或改写同类项目的代码、脚本、README 或文件结构。Quota Grove 应用图标为本项目独立绘制，四张正式主题背景由产品负责人提供，程序化回退背景为本项目独立绘制。
+本项目依据 `Quota-Grove-PRD.md` 从空目录独立实现，没有读取、复制或改写同类项目的代码、脚本、README 或文件结构。Quota Grove 应用图标为本项目独立绘制，四张正式主题背景由产品负责人提供，程序化回退背景为本项目独立绘制。落叶粒子素材为本项目使用 OpenAI ImageGen 专门生成并经本地分割、调色和动态模糊处理，未复制第三方素材包。
 
 `Assets/CodexIcon.png` 来自本机安装的官方 Codex/ChatGPT 桌面应用，仅作为额度来源标识使用。该图标及“OpenAI”“Codex”“ChatGPT”等名称或商标的相关权利归其各自权利人所有，不包含在本项目许可证授予的权利范围内。详见 [素材来源](asset-sources.md)、[第三方声明](THIRD_PARTY_NOTICES.md) 和 [LICENSE](LICENSE)。
 

@@ -33,6 +33,9 @@ enum SelfTestRunner {
         expect(QuotaTheme.apocalypse.accent != QuotaTheme.forest.accent, "末日进度条不得使用森林绿", report: &report)
         expect(QuotaTheme.wasteland.accent != QuotaTheme.forest.accent, "废土进度条不得使用森林绿", report: &report)
         expect(QuotaTheme.wasteland.borderAccent != QuotaTheme.wasteland.accent, "废土边框必须使用灰白色并与红色进度警示区分", report: &report)
+        expect(QuotaTheme.forest.progressAccent != QuotaTheme.forest.accent, "森林进度条应使用比边框更鲜明的绿色", report: &report)
+        expect(QuotaTheme.autumn.progressAccent == QuotaTheme.autumn.accent, "森林之外的主题应保留原有进度色", report: &report)
+        expect(QuotaCardView.ambientLeafInterval == 5, "环境落叶应每 5 秒检查并播放一次", report: &report)
 
         do {
             let line = Data(#"{"timestamp":"2026-08-27T07:48:05.500Z","payload":{"type":"token_count","rate_limits":{"primary":{"used_percent":31.0,"window_minutes":10080,"resets_at":1788405013},"secondary":{"used_percent":8,"window_minutes":300,"resets_at":1787810000},"plan_type":"prolite"}}}"#.utf8)
@@ -73,6 +76,27 @@ enum SelfTestRunner {
         expect(AppText.windowTitle(minutes: 10_080, language: .english) == "7-day quota", "英文额度标题应正确", report: &report)
         expect(AppText.quotaUsage(remaining: 54, used: 46, language: .chinese) == "剩余 54% · 已用 46%", "中文额度详情应正确", report: &report)
         expect(AppText.quotaUsage(remaining: 54, used: 46, language: .english) == "54% left · 46% used", "英文额度详情应正确", report: &report)
+
+        var onePointDrop = LeafParticleSystem()
+        onePointDrop.emit(forPercentageDrop: 1, in: CGSize(width: 200, height: 80))
+        expect(onePointDrop.leaves.count == 8, "每下降 1% 应生成 8 片轻量落叶", report: &report)
+        let depthBands = Set(onePointDrop.leaves.map { Int($0.depth * 10) })
+        expect(depthBands.count >= 3, "同组落叶应覆盖远中近至少 3 层景深", report: &report)
+        expect(onePointDrop.leaves.filter { $0.focus == .crisp }.count == 2, "每组落叶应保留 2 片清晰叶片", report: &report)
+        expect(onePointDrop.leaves.filter { $0.focus == .soft }.count == 2, "每组落叶应包含 2 片景深虚化叶片", report: &report)
+        expect(onePointDrop.leaves.filter { $0.focus == .motion }.count == 4, "每组落叶应包含 4 片方向模糊叶片", report: &report)
+        expect(onePointDrop.leaves.allSatisfy { $0.position.x >= 120 }, "落叶的初始构图应集中在卡片右侧", report: &report)
+
+        var threePointDrop = LeafParticleSystem()
+        threePointDrop.emit(forPercentageDrop: 3, in: CGSize(width: 200, height: 80))
+        expect(threePointDrop.leaves.count == 24, "连续下降百分比应按组生成落叶", report: &report)
+
+        for _ in 0..<15 { onePointDrop.advance(by: 1.0 / 30.0) }
+        expect(onePointDrop.visibleCount > 0, "落叶延迟结束后应进入可见状态", report: &report)
+
+        var largeDrop = LeafParticleSystem()
+        largeDrop.emit(forPercentageDrop: 100, in: CGSize(width: 200, height: 80))
+        expect(largeDrop.leaves.count == 32, "大幅跳变应限制同时动画密度", report: &report)
 
         return report
     }

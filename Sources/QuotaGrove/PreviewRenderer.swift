@@ -19,6 +19,39 @@ enum PreviewRenderer {
         view.isStashed = stashed
         view.layoutSubtreeIfNeeded()
 
+        try write(view: view, size: size, to: url)
+    }
+
+    static func renderLeafFrames(
+        from startPercent: Double,
+        to endPercent: Double,
+        expanded: Bool,
+        framesPerSecond: Int = 30,
+        duration: TimeInterval = 4,
+        to directory: URL
+    ) throws {
+        let size = NSSize(
+            width: CardWindowController.cardWidth,
+            height: expanded ? CardWindowController.expandedHeight : CardWindowController.collapsedHeight
+        )
+        let view = QuotaCardView(frame: NSRect(origin: .zero, size: size))
+        view.isExpanded = expanded
+        view.snapshot = .demo(remainingPercent: startPercent)
+        view.snapshot = .demo(remainingPercent: endPercent)
+        view.layoutSubtreeIfNeeded()
+
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let frameCount = max(1, Int(duration * Double(framesPerSecond)))
+        let deltaTime = 1.0 / Double(framesPerSecond)
+        for frame in 0..<frameCount {
+            if frame > 0 { view.advanceLeafAnimationForPreview(by: deltaTime) }
+            let frameURL = directory.appendingPathComponent(String(format: "frame-%03d.png", frame))
+            try write(view: view, size: size, to: frameURL)
+        }
+    }
+
+    private static func write(view: NSView, size: NSSize, to url: URL) throws {
+
         let scale = 2
         guard let bitmap = NSBitmapImageRep(
             bitmapDataPlanes: nil,

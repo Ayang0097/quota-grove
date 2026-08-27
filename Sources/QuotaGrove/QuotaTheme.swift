@@ -41,6 +41,15 @@ enum QuotaTheme: String, CaseIterable, Codable {
         }
     }
 
+    var progressAccent: NSColor {
+        switch self {
+        case .forest:
+            return NSColor(calibratedRed: 0.25, green: 0.86, blue: 0.42, alpha: 1)
+        default:
+            return accent
+        }
+    }
+
     var accessibilityName: String {
         AppText.themeAccessibilityName(self)
     }

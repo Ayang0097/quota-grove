@@ -19,6 +19,10 @@ cp "$project_root/Support/Info.plist" "$app_dir/Contents/Info.plist"
 cp "$project_root/Assets/CodexIcon.png" "$app_dir/Contents/Resources/CodexIcon.png"
 mkdir -p "$app_dir/Contents/Resources/Backgrounds"
 cp "$project_root"/bg/*.png "$app_dir/Contents/Resources/Backgrounds/"
+mkdir -p "$app_dir/Contents/Resources/Leaves"
+for theme in forest autumn apocalypse wasteland; do
+  cp "$project_root"/Assets/Leaves/$theme-*.png "$app_dir/Contents/Resources/Leaves/"
+done
 
 rm -rf "$iconset_dir"
 mkdir -p "$iconset_dir"

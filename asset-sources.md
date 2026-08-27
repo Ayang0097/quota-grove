@@ -25,11 +25,18 @@
 - 废土：`bg/背景百分之3以下.png`
 - 回退背景：`QuotaCardView.swift` 中独立绘制的 Core Graphics/AppKit 路径和渐变，仅在正式图片缺失时使用。
 
+## 落叶粒子
+
+- 文件：`Assets/Leaves/forest-*.png`、`autumn-*.png`、`apocalypse-*.png`、`wasteland-*.png`。
+- 来源：使用 OpenAI ImageGen 为 Quota Grove 专门生成的透明叶片图集，再在本地分割为运行时素材。
+- 后处理：应用运行时根据森林、秋林、末日和废土主题调色，并使用 Core Image 生成景深虚化；方向模糊和飘落轨迹由应用代码实时绘制。
+- 权利边界：素材不包含第三方品牌标识，不是从现有素材包、图库或同类项目复制。
+
 除上述 Codex 额度来源标识外，项目未捆绑其他第三方品牌图标。
 
-## README 展示图
+## README 展示图与动图
 
-- 文件：`docs/screenshots/quota-grove-themes-en-v101.png`、`docs/screenshots/quota-grove-modes-en-v101.png`。
-- 来源：由 `Scripts/render-readme-showcase.swift` 调用应用内置的真实预览渲染器生成卡片，再使用 Apple AppKit 合成展示画布。
-- 内容：展示四个额度主题，以及收起、展开和贴边隐藏三种界面形态。
+- 文件：`docs/screenshots/quota-grove-themes-en-v101.png`、`docs/screenshots/quota-grove-modes-en-v101.png`、`docs/screenshots/quota-grove-leaf-animation.gif`。
+- 来源：两张 PNG 由 `Scripts/render-readme-showcase.swift` 调用应用内置的真实预览渲染器生成，再使用 Apple AppKit 合成；落叶 GIF 由应用的 `--render-leaf-frames` 逐帧渲染能力输出，再编码为动图。
+- 内容：展示四个额度主题，以及收起、展开、贴边隐藏和主题同步落叶动效。
 - 字体：仅使用 macOS 系统字体，不额外捆绑字体文件。

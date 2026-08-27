@@ -70,9 +70,11 @@ final class CardWindowController: NSWindowController, QuotaCardViewDelegate {
 
     func showCard() {
         panel.orderFrontRegardless()
+        cardView.setAmbientLeafAnimationActive(true)
     }
 
     func hideCard() {
+        cardView.setAmbientLeafAnimationActive(false)
         panel.orderOut(nil)
     }
 

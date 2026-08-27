@@ -52,6 +52,34 @@ private func renderPreview(arguments: [String]) -> Never {
     }
 }
 
+private func renderLeafFrames(arguments: [String]) -> Never {
+    guard
+        let index = arguments.firstIndex(of: "--render-leaf-frames"),
+        arguments.indices.contains(index + 3),
+        let startPercent = Double(arguments[index + 1]),
+        let endPercent = Double(arguments[index + 2])
+    else {
+        FileHandle.standardError.write(Data("用法：QuotaGrove --render-leaf-frames <from-percent> <to-percent> <directory> [--expanded]\n".utf8))
+        exit(64)
+    }
+
+    _ = NSApplication.shared
+    do {
+        let directory = URL(fileURLWithPath: arguments[index + 3], isDirectory: true)
+        try PreviewRenderer.renderLeafFrames(
+            from: startPercent,
+            to: endPercent,
+            expanded: arguments.contains("--expanded"),
+            to: directory
+        )
+        print(directory.path)
+        exit(0)
+    } catch {
+        FileHandle.standardError.write(Data("落叶预览生成失败：\(error.localizedDescription)\n".utf8))
+        exit(1)
+    }
+}
+
 private func runSelfTests() -> Never {
     let report = SelfTestRunner.run()
     if report.succeeded {
@@ -68,6 +96,8 @@ if arguments.contains("--self-test") {
     runSelfTests()
 } else if arguments.contains("--snapshot-json") {
     printSnapshot()
+} else if arguments.contains("--render-leaf-frames") {
+    renderLeafFrames(arguments: arguments)
 } else if arguments.contains("--render-preview") {
     renderPreview(arguments: arguments)
 } else {

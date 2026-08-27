@@ -5,3 +5,6 @@ dist/
 .DS_Store
 *.xcuserstate
 test-output*/
+Assets/Leaves/References/
+Assets/Leaves/leaf-atlas-v1.png
+Scripts/slice-leaf-atlas.py
