@@ -4,7 +4,7 @@ final class CardWindowController: NSWindowController, QuotaCardViewDelegate {
     static let cardWidth: CGFloat = 200
     static let collapsedHeight: CGFloat = 80
     static let expandedHeight: CGFloat = 178
-    static let stashedWidth: CGFloat = 24
+    static let stashedWidth: CGFloat = 16
     static let safeInset: CGFloat = 20
 
     var onRefresh: (() -> Void)?

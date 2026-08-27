@@ -169,7 +169,7 @@ final class QuotaCardView: NSView {
         NSGraphicsContext.saveGraphicsState()
         shell.addClip()
         drawEnvironment(in: shellRect)
-        NSColor(calibratedWhite: 0, alpha: 0.28).setFill()
+        NSColor(calibratedWhite: 0, alpha: 0.48).setFill()
         shell.fill()
         NSGraphicsContext.restoreGraphicsState()
 
@@ -178,13 +178,13 @@ final class QuotaCardView: NSView {
         shell.stroke()
 
         let trackRect = NSRect(
-            x: (bounds.width - 6) / 2,
-            y: 11,
-            width: 6,
-            height: bounds.height - 22
+            x: (bounds.width - 5) / 2,
+            y: 15,
+            width: 5,
+            height: bounds.height - 30
         )
-        let track = NSBezierPath(roundedRect: trackRect, xRadius: 3, yRadius: 3)
-        NSColor(calibratedWhite: 0.025, alpha: 0.62).setFill()
+        let track = NSBezierPath(roundedRect: trackRect, xRadius: 2.5, yRadius: 2.5)
+        NSColor(calibratedWhite: 0.02, alpha: 0.74).setFill()
         track.fill()
 
         let remaining = CGFloat(snapshot?.remainingPercent ?? 0) / 100
@@ -196,7 +196,7 @@ final class QuotaCardView: NSView {
             width: trackRect.width,
             height: fillHeight
         )
-        let fill = NSBezierPath(roundedRect: fillRect, xRadius: 3, yRadius: 3)
+        let fill = NSBezierPath(roundedRect: fillRect, xRadius: 2.5, yRadius: 2.5)
         NSGraphicsContext.saveGraphicsState()
         fill.addClip()
         let accent = snapshot.map { QuotaTheme.select(for: $0.remainingPercent).accent } ?? .white
