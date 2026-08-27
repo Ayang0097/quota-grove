@@ -407,13 +407,21 @@ final class QuotaCardView: NSView {
         drawText(title, at: NSPoint(x: 12, y: top - 26), font: titleFont, color: titleColor)
 
         let titleWidth = (title as NSString).size(withAttributes: [.font: titleFont]).width
-        drawMark(at: NSPoint(x: 12 + titleWidth + 6, y: top - 25), size: 14)
+        let markX = 12 + titleWidth + 6
+        drawMark(at: NSPoint(x: markX, y: top - 25), size: 14)
+
+        let percent = snapshot.map { "\($0.roundedRemaining)%" } ?? "--%"
+        let percentFont = NSFont.monospacedDigitSystemFont(ofSize: 25, weight: .bold)
+        let percentWidth = (percent as NSString).size(withAttributes: [.font: percentFont]).width
+        let staleBadgeX = markX + 19
+        if isStale, staleBadgeX + 27 <= 188 - percentWidth - 5 {
+            drawStaleBadge(at: NSPoint(x: staleBadgeX, y: top - 27))
+        }
 
         let resetText = summaryResetText()
         drawText(resetText, at: NSPoint(x: 12, y: top - 45), font: .systemFont(ofSize: 10.5, weight: .medium), color: .white.withAlphaComponent(isStale ? 0.78 : 0.62))
 
-        let percent = snapshot.map { "\($0.roundedRemaining)%" } ?? "--%"
-        drawText(percent, at: NSPoint(x: 188, y: top - 43), font: .monospacedDigitSystemFont(ofSize: 25, weight: .bold), color: .white, alignment: .right)
+        drawText(percent, at: NSPoint(x: 188, y: top - 43), font: percentFont, color: .white, alignment: .right)
         drawText("剩余", at: NSPoint(x: 188, y: top - 56), font: .systemFont(ofSize: 9.5, weight: .medium), color: .white.withAlphaComponent(0.62), alignment: .right)
 
         let barRect = NSRect(x: 12, y: top - 71, width: 176, height: 5)
@@ -429,8 +437,8 @@ final class QuotaCardView: NSView {
         NSGraphicsContext.saveGraphicsState()
         fill.addClip()
         let accent = currentTheme.accent
-        let leading = accent.blended(withFraction: 0.12, of: .black) ?? accent
-        let trailing = accent.blended(withFraction: 0.18, of: .white) ?? accent
+        let leading = accent.blended(withFraction: 0.24, of: .black) ?? accent
+        let trailing = accent.blended(withFraction: 0.34, of: .white) ?? accent
         NSGradient(colors: [leading, accent, trailing])?.draw(in: fillRect, angle: 0)
         NSGraphicsContext.restoreGraphicsState()
     }
@@ -491,6 +499,23 @@ final class QuotaCardView: NSView {
         leaf.stroke()
     }
 
+    private func drawStaleBadge(at point: NSPoint) {
+        let rect = NSRect(x: point.x, y: point.y, width: 27, height: 12)
+        let path = NSBezierPath(roundedRect: rect, xRadius: 6, yRadius: 6)
+        let amber = NSColor(calibratedRed: 1, green: 0.72, blue: 0.3, alpha: 1)
+        amber.withAlphaComponent(0.16).setFill()
+        path.fill()
+        amber.withAlphaComponent(0.58).setStroke()
+        path.lineWidth = 0.7
+        path.stroke()
+        drawText(
+            "陈旧",
+            at: NSPoint(x: rect.minX + 5, y: rect.minY + 1),
+            font: .systemFont(ofSize: 8.5, weight: .semibold),
+            color: amber.withAlphaComponent(0.9)
+        )
+    }
+
     private enum TextAlignment { case left, right }
 
     private func drawText(_ text: String, at point: NSPoint, font: NSFont, color: NSColor, alignment: TextAlignment = .left) {
@@ -505,8 +530,7 @@ final class QuotaCardView: NSView {
 
     private func summaryResetText() -> String {
         guard let snapshot else { return "等待额度数据" }
-        let base = resetComponents(until: snapshot.resetsAt, suffix: "后重置")
-        return isStale ? "\(base) · 数据可能已过期" : base
+        return resetComponents(until: snapshot.resetsAt, suffix: "后重置")
     }
 
     private func exactResetText() -> String {
