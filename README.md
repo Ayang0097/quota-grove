@@ -112,7 +112,7 @@ swift build
 
 ## 数据与兼容性说明
 
-OpenAI 目前没有为个人订阅公开稳定的“剩余百分比”API。本工具独立解析 macOS 的 `~/.codex/sessions` 或 Windows 的 `%USERPROFILE%\.codex\sessions` 中最近运行事件里的 `rate_limits` 字段，优先选择 10080 分钟的 7 天窗口。Windows 还支持通过 `QUOTA_GROVE_CODEX_HOME` 或 `CODEX_HOME` 指定兼容目录。
+OpenAI 目前没有为个人订阅公开稳定的“剩余百分比”API。本工具独立解析 macOS 的 `~/.codex/sessions` 或 Windows 的 `%USERPROFILE%\.codex\sessions` 中最近运行事件里的 `rate_limits` 字段，忽略单独模型的专属额度事件，并优先选择 Codex 总额度中 10080 分钟的 7 天窗口。Windows 还支持通过 `QUOTA_GROVE_CODEX_HOME` 或 `CODEX_HOME` 指定兼容目录。
 
 该字段属于本机兼容性适配，不是官方稳定接口。暂时无法取得新数据时，工具会继续显示最近可信快照；展开卡片可查看“数据更新”时间。从未取得过数据时显示 `--%`，不会猜测，也不会尝试绕过访问控制。详见 [data-source-notes.md](data-source-notes.md) 与 [PRIVACY.md](PRIVACY.md)。
 

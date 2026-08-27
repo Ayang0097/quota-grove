@@ -19,6 +19,20 @@ public static class QuotaEventParser
             return null;
         }
 
+        // Codex can emit separate rate-limit events for individual models.
+        // Quota Grove represents the account-wide Codex quota, so those
+        // model-specific limits must not replace the overall value.
+        if (limits.TryGetProperty("limit_id", out var limitIdValue) &&
+            limitIdValue.ValueKind == JsonValueKind.String)
+        {
+            var limitId = limitIdValue.GetString();
+            if (!string.IsNullOrEmpty(limitId) &&
+                !string.Equals(limitId, "codex", StringComparison.Ordinal))
+            {
+                return null;
+            }
+        }
+
         var windows = new List<RateLimitWindow>(2);
         foreach (var key in new[] { "primary", "secondary" })
         {

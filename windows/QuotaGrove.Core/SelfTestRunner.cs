@@ -32,7 +32,7 @@ public static class SelfTestRunner
         Expect(QuotaThemes.Style(QuotaTheme.Wasteland).AccentHex != QuotaThemes.Style(QuotaTheme.Forest).AccentHex, "废土进度条不得使用森林绿");
         Expect(QuotaThemes.Style(QuotaTheme.Wasteland).BorderHex != QuotaThemes.Style(QuotaTheme.Wasteland).AccentHex, "废土边框必须使用灰白色");
 
-        const string valid = "{\"timestamp\":\"2026-08-27T07:48:05.500Z\",\"payload\":{\"type\":\"token_count\",\"rate_limits\":{\"primary\":{\"used_percent\":31.0,\"window_minutes\":10080,\"resets_at\":1788405013},\"secondary\":{\"used_percent\":8,\"window_minutes\":300,\"resets_at\":1787810000},\"plan_type\":\"prolite\"}}}";
+        const string valid = "{\"timestamp\":\"2026-08-27T07:48:05.500Z\",\"payload\":{\"type\":\"token_count\",\"rate_limits\":{\"limit_id\":\"codex\",\"primary\":{\"used_percent\":31.0,\"window_minutes\":10080,\"resets_at\":1788405013},\"secondary\":{\"used_percent\":8,\"window_minutes\":300,\"resets_at\":1787810000},\"plan_type\":\"prolite\"}}}";
         var snapshot = QuotaEventParser.ParseLine(valid);
         Expect(snapshot?.WindowMinutes == 10_080, "优先选择 7 天窗口");
         Expect(snapshot?.RemainingPercent == 69, "剩余百分比应由已用百分比计算");
@@ -40,6 +40,9 @@ public static class SelfTestRunner
         Expect(snapshot?.ResetsAt?.ToUnixTimeSeconds() == 1_788_405_013, "Unix 重置时间应正确解析");
 
         Expect(QuotaEventParser.ParseLine("{\"payload\":{\"type\":\"message\"}}") is null, "无关事件必须忽略");
+
+        const string modelSpecific = "{\"timestamp\":\"2026-08-27T14:08:32.668Z\",\"payload\":{\"type\":\"token_count\",\"rate_limits\":{\"limit_id\":\"codex_bengalfox\",\"limit_name\":\"GPT-5.3-Codex-Spark\",\"primary\":{\"used_percent\":0,\"window_minutes\":300},\"secondary\":{\"used_percent\":0,\"window_minutes\":10080},\"plan_type\":\"prolite\"}}}";
+        Expect(QuotaEventParser.ParseLine(modelSpecific) is null, "单独模型额度不得覆盖 Codex 总额度");
 
         try
         {
