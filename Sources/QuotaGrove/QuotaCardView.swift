@@ -211,8 +211,8 @@ final class QuotaCardView: NSView {
         fill.addClip()
         let accent = snapshot.map { QuotaTheme.select(for: $0.remainingPercent).accent } ?? .white
         NSGradient(
-            starting: accent,
-            ending: accent.blended(withFraction: 0.2, of: .white) ?? accent
+            starting: accent.blended(withFraction: 0.32, of: .black) ?? accent,
+            ending: accent.blended(withFraction: 0.08, of: .black) ?? accent
         )?.draw(in: fillRect, angle: 90)
         NSGraphicsContext.restoreGraphicsState()
 
@@ -449,9 +449,10 @@ final class QuotaCardView: NSView {
         NSGraphicsContext.saveGraphicsState()
         fill.addClip()
         let accent = currentTheme.accent
-        let leading = accent.blended(withFraction: 0.24, of: .black) ?? accent
-        let trailing = accent.blended(withFraction: 0.34, of: .white) ?? accent
-        NSGradient(colors: [leading, accent, trailing])?.draw(in: fillRect, angle: 0)
+        let leading = accent.blended(withFraction: 0.42, of: .black) ?? accent
+        let middle = accent.blended(withFraction: 0.14, of: .black) ?? accent
+        let trailing = accent.blended(withFraction: 0.08, of: .white) ?? accent
+        NSGradient(colors: [leading, middle, trailing])?.draw(in: fillRect, angle: 0)
         NSGraphicsContext.restoreGraphicsState()
     }
 
