@@ -1,0 +1,45 @@
+# 数据源调查记录
+
+日期：2026-08-27
+
+## 官方边界
+
+OpenAI 官方资料说明 Codex 用量会随任务大小、复杂度和执行位置变化，额度状态与重置时间应以 Codex 客户端或用量界面显示为准。调查未发现面向个人 ChatGPT 订阅、可供第三方桌面工具稳定调用的公开“剩余百分比”API。
+
+参考：
+
+- https://learn.chatgpt.com/docs/pricing
+- https://help.openai.com/en/articles/11369540-using-codex-with-your-chatgpt-plan
+
+## 本机观察
+
+在用户本机合法可见的 `~/.codex/sessions/**/*.jsonl` 运行事件中，`payload.rate_limits` 包含：
+
+- `primary.used_percent`
+- `primary.window_minutes`
+- `primary.resets_at`
+- `secondary`（可能为空）
+- `plan_type`（可能为空）
+
+2026-08-27 的最小字段验证显示 `window_minutes = 10080`，即 7 天窗口。实现不固化当时的百分比，只使用运行时最新可信事件。
+
+## 适配规则
+
+1. 只检查最近变更的 JSONL 文件尾部。
+2. 只对包含字符串 `\"rate_limits\"` 的行做 JSON 解析。
+3. 在 `primary` 和 `secondary` 中优先匹配 10080 分钟；否则选择窗口最长且字段完整的一项，并按实际窗口命名。
+4. 仅接受 `used_percent` 在 0...100 之间的有限数值。
+5. `remaining_percent` 由 `100 - used_percent` 计算并限制显示到 0...100。
+6. `resets_at` 按 Unix 秒解析；缺失时显示“重置时间未知”。
+7. `plan_type` 只做可读性映射，未知值原样显示，不推测套餐权益。
+
+## 隐私边界
+
+- 不读取或保存账号密码、令牌和 `auth.json`。
+- 不上传任何字段。
+- 不记录事件原文或会话路径。
+- 文件尾部扫描会经过相邻字节，但解析器只反序列化包含额度标识的行，其他行立即丢弃。
+
+## 兼容性风险
+
+该本机事件格式不是官方公开稳定接口。若路径、字段或语义改变，工具可能暂时无法更新。安全行为是保留最近可信快照、标记陈旧并显示明确错误，而不是猜测数据或尝试访问受限接口。
