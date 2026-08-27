@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#071E19"/>
+      <stop offset="1" stop-color="#164E38"/>
+    </linearGradient>
+    <linearGradient id="leaf" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#66D69B"/>
+      <stop offset="1" stop-color="#C4F7D7"/>
+    </linearGradient>
+  </defs>
+  <rect x="54" y="54" width="916" height="916" rx="232" fill="url(#bg)"/>
+  <rect x="70" y="70" width="884" height="884" rx="216" fill="none" stroke="#87D8AA" stroke-width="20" opacity=".82"/>
+  <path d="M247 388l150 124-150 124" fill="none" stroke="#F4FFF8" stroke-width="66" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M432 670h170" fill="none" stroke="#F4FFF8" stroke-width="62" stroke-linecap="round"/>
+  <path d="M512 344c105-115 255-119 322-98-4 131-45 270-198 302-89 19-147-46-124-204z" fill="url(#leaf)"/>
+  <path d="M522 584c54-102 132-175 245-260" fill="none" stroke="#164E38" stroke-width="28" stroke-linecap="round"/>
+  <path d="M742 690a280 280 0 0 1-416 62" fill="none" stroke="#66D69B" stroke-width="38" stroke-linecap="round" opacity=".9"/>
+</svg>
