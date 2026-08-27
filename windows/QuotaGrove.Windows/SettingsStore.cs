@@ -6,6 +6,7 @@ namespace QuotaGrove.Windows;
 
 internal sealed class SettingsState
 {
+    public int LayoutVersion { get; set; }
     public double? Left { get; set; }
     public double? Top { get; set; }
     public bool Expanded { get; set; }

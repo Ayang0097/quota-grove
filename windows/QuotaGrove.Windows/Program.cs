@@ -31,6 +31,13 @@ internal static class Program
 
         var store = new SettingsStore();
         var settings = store.Load();
+        if (settings.LayoutVersion < 2)
+        {
+            settings.LayoutVersion = 2;
+            settings.Left = null;
+            settings.Top = null;
+            store.Save(settings);
+        }
         var source = new LocalRateLimitSource();
         var refreshGate = new SemaphoreSlim(1, 1);
         MainWindow? window = null;

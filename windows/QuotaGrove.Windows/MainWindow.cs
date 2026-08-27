@@ -18,11 +18,16 @@ internal enum EdgeSide
 
 internal sealed class MainWindow : Window
 {
-    private const double CardWidth = 400;
-    private const double CollapsedHeight = 160;
-    private const double ExpandedHeight = 356;
-    private const double StashedWidth = 32;
-    private const double SafeInset = 40;
+    private const double CardWidth = 268;
+    private const double CollapsedHeight = 107;
+    private const double ExpandedHeight = 238;
+    private const double StashedWidth = 21;
+    private const double SafeInset = 27;
+    private const double ShellRadius = 24;
+    private const double ContentInset = 20;
+    private const double ContentWidth = 228;
+    private const double ProgressHeight = 7;
+    private const double StashedTrackHeight = 87;
 
     private readonly SettingsState _settings;
     private readonly SettingsStore? _settingsStore;
@@ -81,8 +86,8 @@ internal sealed class MainWindow : Window
 
         _shell = new Border
         {
-            CornerRadius = new CornerRadius(36),
-            BorderThickness = new Thickness(2),
+            CornerRadius = new CornerRadius(ShellRadius),
+            BorderThickness = new Thickness(1.25),
             ClipToBounds = true,
             SnapsToDevicePixels = true
         };
@@ -93,7 +98,7 @@ internal sealed class MainWindow : Window
 
         root.Children.Add(new Border
         {
-            CornerRadius = new CornerRadius(36),
+            CornerRadius = new CornerRadius(ShellRadius),
             Background = new LinearGradientBrush(
                 new GradientStopCollection
                 {
@@ -109,55 +114,55 @@ internal sealed class MainWindow : Window
         root.Children.Add(_summary);
 
         var titlePanel = new StackPanel { Orientation = Orientation.Horizontal };
-        Canvas.SetLeft(titlePanel, 30);
-        Canvas.SetTop(titlePanel, 43);
-        _titleText = Text(AppText.SevenDayQuota, 26, FontWeights.Medium, Color.FromArgb(245, 255, 255, 255));
+        Canvas.SetLeft(titlePanel, ContentInset);
+        Canvas.SetTop(titlePanel, 29);
+        _titleText = Text(AppText.SevenDayQuota, 17, FontWeights.Medium, Color.FromArgb(245, 255, 255, 255));
         titlePanel.Children.Add(_titleText);
         titlePanel.Children.Add(new Image
         {
-            Width = 30,
-            Height = 30,
-            Margin = new Thickness(8, -1, 0, 0),
+            Width = 20,
+            Height = 20,
+            Margin = new Thickness(5, -0.5, 0, 0),
             Source = LoadImage("CodexIcon.png")
         });
         _summary.Children.Add(titlePanel);
 
-        _resetText = Text(AppText.WaitingForQuota, AppText.CurrentLanguage == AppLanguage.English ? 18 : 21, FontWeights.Medium, Color.FromArgb(158, 255, 255, 255));
-        Canvas.SetLeft(_resetText, 30);
-        Canvas.SetTop(_resetText, 82);
+        _resetText = Text(AppText.WaitingForQuota, 14, FontWeights.Medium, Color.FromArgb(158, 255, 255, 255));
+        Canvas.SetLeft(_resetText, ContentInset);
+        Canvas.SetTop(_resetText, 55);
         _summary.Children.Add(_resetText);
 
-        _percentText = Text("--%", 46, FontWeights.SemiBold, Colors.White);
+        _percentText = Text("--%", 31, FontWeights.SemiBold, Colors.White);
         _percentText.FontFamily = new FontFamily("Cascadia Mono, Consolas");
         _percentText.TextAlignment = TextAlignment.Right;
-        _percentText.Width = 150;
-        Canvas.SetLeft(_percentText, 220);
-        Canvas.SetTop(_percentText, 21);
+        _percentText.Width = 100;
+        Canvas.SetLeft(_percentText, 148);
+        Canvas.SetTop(_percentText, 14);
         _summary.Children.Add(_percentText);
 
-        _remainingText = Text(AppText.Remaining, AppText.CurrentLanguage == AppLanguage.English ? 16 : 19, FontWeights.Medium, Color.FromArgb(158, 255, 255, 255));
+        _remainingText = Text(AppText.Remaining, AppText.CurrentLanguage == AppLanguage.English ? 11 : 12.5, FontWeights.Medium, Color.FromArgb(158, 255, 255, 255));
         _remainingText.TextAlignment = TextAlignment.Right;
-        _remainingText.Width = 90;
-        Canvas.SetLeft(_remainingText, 280);
-        Canvas.SetTop(_remainingText, 78);
+        _remainingText.Width = 60;
+        Canvas.SetLeft(_remainingText, 188);
+        Canvas.SetTop(_remainingText, 52);
         _summary.Children.Add(_remainingText);
 
         var progressTrack = new Border
         {
-            Width = 340,
-            Height = 10,
-            CornerRadius = new CornerRadius(5),
+            Width = ContentWidth,
+            Height = ProgressHeight,
+            CornerRadius = new CornerRadius(ProgressHeight / 2),
             Background = new SolidColorBrush(Color.FromArgb(112, 0, 0, 0))
         };
-        Canvas.SetLeft(progressTrack, 30);
-        Canvas.SetTop(progressTrack, 132);
+        Canvas.SetLeft(progressTrack, ContentInset);
+        Canvas.SetTop(progressTrack, 88);
         _summary.Children.Add(progressTrack);
 
         _progressFill = new Border
         {
             Width = 0,
-            Height = 10,
-            CornerRadius = new CornerRadius(5),
+            Height = ProgressHeight,
+            CornerRadius = new CornerRadius(ProgressHeight / 2),
             HorizontalAlignment = HorizontalAlignment.Left
         };
         progressTrack.Child = _progressFill;
@@ -174,36 +179,36 @@ internal sealed class MainWindow : Window
 
         var divider = new Border
         {
-            Width = 340,
-            Height = 2,
+            Width = ContentWidth,
+            Height = 1,
             Background = new SolidColorBrush(Color.FromArgb(41, 255, 255, 255))
         };
-        Canvas.SetLeft(divider, 30);
-        Canvas.SetTop(divider, 6);
+        Canvas.SetLeft(divider, ContentInset);
+        Canvas.SetTop(divider, 4);
         _details.Children.Add(divider);
 
-        _detailQuota = AddDetailRow(AppText.SevenDayQuota, 36);
-        _detailQuota.FontSize = AppText.CurrentLanguage == AppLanguage.English ? 19 : 21;
-        _detailReset = AddDetailRow(AppText.TimeToReset, 78);
-        _detailPlan = AddDetailRow(AppText.SubscriptionPlan, 120);
-        _detailUpdated = AddDetailRow(AppText.DataUpdated, 162);
+        _detailQuota = AddDetailRow(AppText.SevenDayQuota, 24);
+        _detailQuota.FontSize = AppText.CurrentLanguage == AppLanguage.English ? 12.5 : 14;
+        _detailReset = AddDetailRow(AppText.TimeToReset, 52);
+        _detailPlan = AddDetailRow(AppText.SubscriptionPlan, 80);
+        _detailUpdated = AddDetailRow(AppText.DataUpdated, 108);
 
         _stashedPanel = new Grid { Visibility = Visibility.Collapsed, Width = StashedWidth, Height = CollapsedHeight };
         root.Children.Add(_stashedPanel);
         var verticalTrack = new Border
         {
-            Width = 10,
-            Height = 130,
-            CornerRadius = new CornerRadius(5),
+            Width = ProgressHeight,
+            Height = StashedTrackHeight,
+            CornerRadius = new CornerRadius(ProgressHeight / 2),
             Background = new SolidColorBrush(Color.FromArgb(189, 5, 7, 6)),
             VerticalAlignment = VerticalAlignment.Center,
             HorizontalAlignment = HorizontalAlignment.Center
         };
         _verticalFill = new Border
         {
-            Width = 10,
+            Width = ProgressHeight,
             Height = 0,
-            CornerRadius = new CornerRadius(5),
+            CornerRadius = new CornerRadius(ProgressHeight / 2),
             VerticalAlignment = VerticalAlignment.Bottom
         };
         verticalTrack.Child = _verticalFill;
@@ -255,9 +260,9 @@ internal sealed class MainWindow : Window
         var accent = ParseColor(style.AccentHex);
         _progressFill.Background = ProgressGradient(accent);
         _verticalFill.Background = ProgressGradient(accent, vertical: true);
-        var progressWidth = snapshot is null ? 0 : Math.Max(snapshot.RemainingPercent > 0 ? 6 : 0, 340 * snapshot.RemainingPercent / 100);
+        var progressWidth = snapshot is null ? 0 : Math.Max(snapshot.RemainingPercent > 0 ? 4 : 0, ContentWidth * snapshot.RemainingPercent / 100);
         _progressFill.Width = progressWidth;
-        _verticalFill.Height = snapshot is null ? 0 : Math.Max(snapshot.RemainingPercent > 0 ? 8 : 0, 130 * snapshot.RemainingPercent / 100);
+        _verticalFill.Height = snapshot is null ? 0 : Math.Max(snapshot.RemainingPercent > 0 ? 5 : 0, StashedTrackHeight * snapshot.RemainingPercent / 100);
         UpdateText();
     }
 
@@ -291,16 +296,16 @@ internal sealed class MainWindow : Window
 
     private TextBlock AddDetailRow(string label, double top)
     {
-        var labelText = Text(label, 21, FontWeights.Medium, Color.FromArgb(143, 255, 255, 255));
-        Canvas.SetLeft(labelText, 30);
+        var labelText = Text(label, 14, FontWeights.Medium, Color.FromArgb(143, 255, 255, 255));
+        Canvas.SetLeft(labelText, ContentInset);
         Canvas.SetTop(labelText, top);
         _details.Children.Add(labelText);
 
-        var valueText = Text("--", 21, FontWeights.Medium, Color.FromArgb(235, 255, 255, 255));
+        var valueText = Text("--", 14, FontWeights.Medium, Color.FromArgb(235, 255, 255, 255));
         valueText.FontFamily = new FontFamily("Cascadia Mono, Consolas");
         valueText.TextAlignment = TextAlignment.Right;
-        valueText.Width = 230;
-        Canvas.SetLeft(valueText, 140);
+        valueText.Width = 154;
+        Canvas.SetLeft(valueText, 94);
         Canvas.SetTop(valueText, top);
         _details.Children.Add(valueText);
         return valueText;
@@ -379,8 +384,8 @@ internal sealed class MainWindow : Window
         _details.Visibility = Visibility.Collapsed;
         _stashedPanel.Visibility = Visibility.Visible;
         _shell.CornerRadius = side == EdgeSide.Left
-            ? new CornerRadius(0, 36, 36, 0)
-            : new CornerRadius(36, 0, 0, 36);
+            ? new CornerRadius(0, ShellRadius, ShellRadius, 0)
+            : new CornerRadius(ShellRadius, 0, 0, ShellRadius);
         UpdateAccessibility();
         if (save) SaveSettings();
     }
@@ -396,7 +401,7 @@ internal sealed class MainWindow : Window
         _summary.Visibility = Visibility.Visible;
         _details.Visibility = _expanded ? Visibility.Visible : Visibility.Collapsed;
         _stashedPanel.Visibility = Visibility.Collapsed;
-        _shell.CornerRadius = new CornerRadius(36);
+        _shell.CornerRadius = new CornerRadius(ShellRadius);
         UpdateAccessibility();
     }
 
@@ -451,7 +456,7 @@ internal sealed class MainWindow : Window
     {
         if (e.LeftButton != MouseButtonState.Pressed || _dragging) return;
         var point = e.GetPosition(this);
-        if (Math.Abs(point.X - _pointerDown.X) < 5 && Math.Abs(point.Y - _pointerDown.Y) < 5) return;
+        if (Math.Abs(point.X - _pointerDown.X) < 4 && Math.Abs(point.Y - _pointerDown.Y) < 4) return;
 
         _dragging = true;
         _suppressClickAfterDrag = true;
@@ -462,7 +467,7 @@ internal sealed class MainWindow : Window
         _summary.Visibility = Visibility.Visible;
         _stashedPanel.Visibility = Visibility.Collapsed;
         _details.Visibility = _expanded ? Visibility.Visible : Visibility.Collapsed;
-        _shell.CornerRadius = new CornerRadius(36);
+        _shell.CornerRadius = new CornerRadius(ShellRadius);
         Width = CardWidth;
         Height = _expanded ? ExpandedHeight : CollapsedHeight;
         if (IsMouseCaptured) ReleaseMouseCapture();
@@ -484,8 +489,8 @@ internal sealed class MainWindow : Window
     private void MaybeStashAfterDrag()
     {
         var workArea = NativeMethods.WorkArea(this);
-        if (Math.Abs(Left - workArea.Left) <= 10) Stash(EdgeSide.Left, save: true);
-        else if (Math.Abs(Left + Width - workArea.Right) <= 10) Stash(EdgeSide.Right, save: true);
+        if (Math.Abs(Left - workArea.Left) <= 7) Stash(EdgeSide.Left, save: true);
+        else if (Math.Abs(Left + Width - workArea.Right) <= 7) Stash(EdgeSide.Right, save: true);
         else
         {
             (_fullLeft, _fullTop) = Constrain(Left, Top, Width, Height, workArea);
@@ -549,7 +554,7 @@ internal sealed class MainWindow : Window
         _summary.Visibility = Visibility.Visible;
         _details.Visibility = _expanded ? Visibility.Visible : Visibility.Collapsed;
         _stashedPanel.Visibility = Visibility.Collapsed;
-        _shell.CornerRadius = new CornerRadius(36);
+        _shell.CornerRadius = new CornerRadius(ShellRadius);
         SaveSettings();
     }
 

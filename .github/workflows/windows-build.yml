@@ -79,6 +79,29 @@ jobs:
             if ($_.Length -lt 10000) { throw "Preview is unexpectedly small: $($_.FullName)" }
           }
 
+          Add-Type -AssemblyName PresentationCore
+          function Assert-PngSize([string]$Path, [int]$ExpectedWidth, [int]$ExpectedHeight) {
+            $stream = [System.IO.File]::OpenRead($Path)
+            try {
+              $decoder = [System.Windows.Media.Imaging.PngBitmapDecoder]::new(
+                $stream,
+                [System.Windows.Media.Imaging.BitmapCreateOptions]::PreservePixelFormat,
+                [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad)
+              $frame = $decoder.Frames[0]
+              if ($frame.PixelWidth -ne $ExpectedWidth -or $frame.PixelHeight -ne $ExpectedHeight) {
+                throw "Unexpected preview size: $Path is $($frame.PixelWidth)x$($frame.PixelHeight), expected ${ExpectedWidth}x${ExpectedHeight}"
+              }
+            }
+            finally {
+              $stream.Dispose()
+            }
+          }
+
+          Assert-PngSize $collapsed 268 107
+          Assert-PngSize $expanded 268 238
+          Assert-PngSize $wasteland 268 107
+          Assert-PngSize $chinese 268 107
+
       - name: Package portable download
         shell: pwsh
         run: |
