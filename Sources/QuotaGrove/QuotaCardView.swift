@@ -404,17 +404,17 @@ final class QuotaCardView: NSView {
         let title = snapshot?.windowTitle ?? "7 天额度"
         let titleFont = NSFont.systemFont(ofSize: 13.5, weight: .medium)
         let titleColor = NSColor.white.withAlphaComponent(0.96)
-        drawText(title, at: NSPoint(x: 12, y: top - 24), font: titleFont, color: titleColor)
+        drawText(title, at: NSPoint(x: 12, y: top - 26), font: titleFont, color: titleColor)
 
         let titleWidth = (title as NSString).size(withAttributes: [.font: titleFont]).width
-        drawMark(at: NSPoint(x: 12 + titleWidth + 6, y: top - 23), size: 14)
+        drawMark(at: NSPoint(x: 12 + titleWidth + 6, y: top - 25), size: 14)
 
         let resetText = summaryResetText()
-        drawText(resetText, at: NSPoint(x: 12, y: top - 43), font: .systemFont(ofSize: 10.5, weight: .medium), color: .white.withAlphaComponent(isStale ? 0.78 : 0.62))
+        drawText(resetText, at: NSPoint(x: 12, y: top - 45), font: .systemFont(ofSize: 10.5, weight: .medium), color: .white.withAlphaComponent(isStale ? 0.78 : 0.62))
 
         let percent = snapshot.map { "\($0.roundedRemaining)%" } ?? "--%"
-        drawText(percent, at: NSPoint(x: 188, y: top - 41), font: .monospacedDigitSystemFont(ofSize: 25, weight: .bold), color: .white, alignment: .right)
-        drawText("剩余", at: NSPoint(x: 188, y: top - 54), font: .systemFont(ofSize: 9.5, weight: .medium), color: .white.withAlphaComponent(0.62), alignment: .right)
+        drawText(percent, at: NSPoint(x: 188, y: top - 43), font: .monospacedDigitSystemFont(ofSize: 25, weight: .bold), color: .white, alignment: .right)
+        drawText("剩余", at: NSPoint(x: 188, y: top - 56), font: .systemFont(ofSize: 9.5, weight: .medium), color: .white.withAlphaComponent(0.62), alignment: .right)
 
         let barRect = NSRect(x: 12, y: top - 71, width: 176, height: 5)
         let track = NSBezierPath(roundedRect: barRect, xRadius: 2.5, yRadius: 2.5)
@@ -429,7 +429,9 @@ final class QuotaCardView: NSView {
         NSGraphicsContext.saveGraphicsState()
         fill.addClip()
         let accent = currentTheme.accent
-        NSGradient(starting: accent, ending: accent.blended(withFraction: 0.22, of: .white) ?? accent)?.draw(in: fillRect, angle: 0)
+        let leading = accent.blended(withFraction: 0.12, of: .black) ?? accent
+        let trailing = accent.blended(withFraction: 0.18, of: .white) ?? accent
+        NSGradient(colors: [leading, accent, trailing])?.draw(in: fillRect, angle: 0)
         NSGraphicsContext.restoreGraphicsState()
     }
 
