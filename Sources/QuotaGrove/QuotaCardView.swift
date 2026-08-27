@@ -143,6 +143,7 @@ final class QuotaCardView: NSView {
     }
 
     func refreshClock() {
+        updateAccessibility()
         needsDisplay = true
     }
 
@@ -412,7 +413,7 @@ final class QuotaCardView: NSView {
         let top = bounds.maxY
         let leftInset: CGFloat = 15
         let contentRight: CGFloat = 185
-        let title = snapshot?.windowTitle ?? "7 天额度"
+        let title = snapshot?.windowTitle ?? AppText.sevenDayQuota
         let titleFont = NSFont.systemFont(ofSize: 13, weight: .medium)
         let titleColor = NSColor.white.withAlphaComponent(0.96)
         drawText(title, at: NSPoint(x: leftInset, y: top - 31), font: titleFont, color: titleColor)
@@ -428,7 +429,7 @@ final class QuotaCardView: NSView {
         drawText(resetText, at: NSPoint(x: leftInset, y: top - 48), font: .systemFont(ofSize: 10.5, weight: .medium), color: .white.withAlphaComponent(0.62))
 
         drawText(percent, at: NSPoint(x: contentRight, y: top - 39), font: percentFont, color: .white, alignment: .right)
-        drawText("剩余", at: NSPoint(x: contentRight, y: top - 49), font: .systemFont(ofSize: 9.5, weight: .medium), color: .white.withAlphaComponent(0.62), alignment: .right)
+        drawText(AppText.remaining, at: NSPoint(x: contentRight, y: top - 49), font: .systemFont(ofSize: 9.5, weight: .medium), color: .white.withAlphaComponent(0.62), alignment: .right)
 
         let barRect = NSRect(x: leftInset, y: top - 68, width: contentRight - leftInset, height: 5)
         let track = NSBezierPath(roundedRect: barRect, xRadius: 2.5, yRadius: 2.5)
@@ -465,10 +466,10 @@ final class QuotaCardView: NSView {
         let valueFont = NSFont.monospacedDigitSystemFont(ofSize: 10.5, weight: .medium)
 
         let rows: [(String, String, CGFloat)] = [
-            ("7 天额度", snapshot.map { "剩余 \($0.roundedRemaining)% · 已用 \($0.roundedUsed)%" } ?? "--", top - 104),
-            ("距离重置", exactResetText(), top - 125),
-            ("订阅计划", snapshot?.readablePlan ?? "--", top - 146),
-            ("数据更新", dataAgeText(), top - 167)
+            (AppText.sevenDayQuota, snapshot.map { AppText.quotaUsage(remaining: $0.roundedRemaining, used: $0.roundedUsed) } ?? "--", top - 104),
+            (AppText.timeToReset, exactResetText(), top - 125),
+            (AppText.subscriptionPlan, snapshot?.readablePlan ?? "--", top - 146),
+            (AppText.dataUpdated, dataAgeText(), top - 167)
         ]
 
         for row in rows {
@@ -544,46 +545,42 @@ final class QuotaCardView: NSView {
     }
 
     private func summaryResetText() -> String {
-        guard let snapshot else { return "等待额度数据" }
-        return resetComponents(until: snapshot.resetsAt, suffix: "后重置")
+        guard let snapshot else { return AppText.waitingForQuota }
+        return resetComponents(until: snapshot.resetsAt, includeResetPrefix: true)
     }
 
     private func exactResetText() -> String {
         guard let snapshot else { return "--" }
-        return resetComponents(until: snapshot.resetsAt, suffix: "")
+        return resetComponents(until: snapshot.resetsAt, includeResetPrefix: false)
     }
 
-    private func resetComponents(until date: Date?, suffix: String) -> String {
-        guard let date else { return "重置时间未知" }
+    private func resetComponents(until date: Date?, includeResetPrefix: Bool) -> String {
+        guard let date else { return AppText.resetTimeUnknown }
         let seconds = max(0, Int(date.timeIntervalSinceNow))
-        if seconds == 0 { return "即将重置" }
+        if seconds == 0 { return AppText.resettingSoon }
         let days = seconds / 86_400
         let hours = (seconds % 86_400) / 3_600
-        if days > 0 { return "\(days) 天 \(hours) 小时\(suffix)" }
         let minutes = max(1, (seconds % 3_600) / 60)
-        return "\(hours) 小时 \(minutes) 分钟\(suffix)"
+        return AppText.resetCountdown(days: days, hours: hours, minutes: minutes, includeResetPrefix: includeResetPrefix)
     }
 
     private func dataAgeText() -> String {
         guard let snapshot else { return "--" }
         let seconds = max(0, Int(Date().timeIntervalSince(snapshot.fetchedAt)))
-        let value: String
-        switch seconds {
-        case 0...4: value = "刚刚"
-        case 5..<60: value = "\(seconds) 秒前"
-        case 60..<3_600: value = "\(seconds / 60) 分钟前"
-        default: value = "\(seconds / 3_600) 小时前"
-        }
-        return value
+        return AppText.dataAge(seconds: seconds)
     }
 
     private func updateAccessibility() {
-        let title = snapshot?.windowTitle ?? "7 天额度"
-        let percent = snapshot.map { "剩余 \($0.roundedRemaining)%" } ?? "等待额度数据"
-        let state = snapshot.map { QuotaTheme.select(for: $0.remainingPercent).accessibilityName } ?? "暂无数据"
-        let mode = isStashed ? "已收纳，悬停显示完整卡片" : "单击\(isExpanded ? "收起" : "展开")，双击刷新"
-        setAccessibilityLabel("\(title)，\(percent)，\(state)。\(mode)。")
+        let title = snapshot?.windowTitle ?? AppText.sevenDayQuota
+        let state = snapshot.map { QuotaTheme.select(for: $0.remainingPercent).accessibilityName } ?? AppText.noData
+        setAccessibilityLabel(AppText.accessibilityLabel(
+            title: title,
+            remainingPercent: snapshot?.roundedRemaining,
+            theme: state,
+            isStashed: isStashed,
+            isExpanded: isExpanded
+        ))
         setAccessibilityValue(snapshot?.remainingPercent as NSNumber?)
-        setAccessibilityHelp("可拖动卡片；拖到屏幕左侧或右侧可收纳。右键打开菜单。")
+        setAccessibilityHelp(AppText.accessibilityHelp)
     }
 }

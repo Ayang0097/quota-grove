@@ -18,13 +18,9 @@ public sealed record QuotaSnapshot(
     public int RoundedUsed => (int)Math.Round(UsedPercent, MidpointRounding.AwayFromZero);
 
     [JsonIgnore]
-    public string WindowTitle => WindowMinutes switch
-    {
-        10_080 => "7 天额度",
-        _ when WindowMinutes % 1_440 == 0 => $"{WindowMinutes / 1_440} 天额度",
-        _ when WindowMinutes % 60 == 0 => $"{WindowMinutes / 60} 小时额度",
-        _ => $"{WindowMinutes} 分钟额度"
-    };
+    public string WindowTitle => AppText.WindowTitle(WindowMinutes);
+
+    public string WindowTitleFor(AppLanguage language) => AppText.WindowTitle(WindowMinutes, language);
 
     [JsonIgnore]
     public string ReadablePlan

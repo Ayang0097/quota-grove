@@ -139,17 +139,17 @@ final class CardWindowController: NSWindowController, QuotaCardViewDelegate {
 
     func cardView(_ view: QuotaCardView, showContextMenu event: NSEvent) {
         let menu = NSMenu(title: "Quota Grove")
-        menu.addItem(withTitle: "刷新额度", action: #selector(refreshFromMenu), keyEquivalent: "r").target = self
+        menu.addItem(withTitle: AppText.refreshQuota, action: #selector(refreshFromMenu), keyEquivalent: "r").target = self
 
-        let launchItem = menu.addItem(withTitle: "登录时启动", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
+        let launchItem = menu.addItem(withTitle: AppText.launchAtLogin, action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
         launchItem.target = self
         launchItem.state = LaunchAtLoginManager.shared.isEnabled ? .on : .off
 
         menu.addItem(.separator())
-        menu.addItem(withTitle: "重置卡片位置", action: #selector(resetPosition), keyEquivalent: "").target = self
-        menu.addItem(withTitle: "关于与隐私", action: #selector(showAbout), keyEquivalent: "").target = self
+        menu.addItem(withTitle: AppText.resetCardPosition, action: #selector(resetPosition), keyEquivalent: "").target = self
+        menu.addItem(withTitle: AppText.aboutAndPrivacy, action: #selector(showAbout), keyEquivalent: "").target = self
         menu.addItem(.separator())
-        menu.addItem(withTitle: "退出 Quota Grove", action: #selector(quit), keyEquivalent: "q").target = self
+        menu.addItem(withTitle: AppText.quit, action: #selector(quit), keyEquivalent: "q").target = self
         NSMenu.popUpContextMenu(menu, with: event, for: cardView)
     }
 
@@ -161,7 +161,7 @@ final class CardWindowController: NSWindowController, QuotaCardViewDelegate {
         do {
             try LaunchAtLoginManager.shared.setEnabled(!LaunchAtLoginManager.shared.isEnabled)
         } catch {
-            presentAlert(title: "无法更新登录启动", message: error.localizedDescription)
+            presentAlert(title: AppText.launchUpdateFailed, message: error.localizedDescription)
         }
     }
 
@@ -178,8 +178,8 @@ final class CardWindowController: NSWindowController, QuotaCardViewDelegate {
 
     @objc private func showAbout() {
         presentAlert(
-            title: "Quota Grove · 额度森林",
-            message: "非官方本机工具，与 OpenAI 无隶属或背书关系。\n\n工具只读取本机 Codex 运行事件中的额度字段，不读取账号凭据，不上传数据，也不包含遥测。"
+            title: AppText.aboutTitle,
+            message: AppText.aboutMessage
         )
     }
 
@@ -193,7 +193,7 @@ final class CardWindowController: NSWindowController, QuotaCardViewDelegate {
         alert.messageText = title
         alert.informativeText = message
         alert.alertStyle = .informational
-        alert.addButton(withTitle: "好")
+        alert.addButton(withTitle: AppText.ok)
         alert.runModal()
     }
 

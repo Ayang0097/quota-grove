@@ -1,4 +1,5 @@
 using Microsoft.Win32;
+using QuotaGrove.Core;
 
 namespace QuotaGrove.Windows;
 
@@ -19,7 +20,7 @@ internal static class StartupManager
     public static void SetEnabled(bool enabled)
     {
         using var key = Registry.CurrentUser.CreateSubKey(RunKey, writable: true)
-            ?? throw new InvalidOperationException("无法打开当前用户的登录启动设置");
+            ?? throw new InvalidOperationException(AppText.MissingExecutable);
         if (enabled)
         {
             key.SetValue(ValueName, $"\"{Environment.ProcessPath}\"");

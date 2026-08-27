@@ -1,5 +1,6 @@
 using System.IO;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -110,7 +111,7 @@ internal sealed class MainWindow : Window
         var titlePanel = new StackPanel { Orientation = Orientation.Horizontal };
         Canvas.SetLeft(titlePanel, 30);
         Canvas.SetTop(titlePanel, 43);
-        _titleText = Text("7 天额度", 26, FontWeights.Medium, Color.FromArgb(245, 255, 255, 255));
+        _titleText = Text(AppText.SevenDayQuota, 26, FontWeights.Medium, Color.FromArgb(245, 255, 255, 255));
         titlePanel.Children.Add(_titleText);
         titlePanel.Children.Add(new Image
         {
@@ -121,7 +122,7 @@ internal sealed class MainWindow : Window
         });
         _summary.Children.Add(titlePanel);
 
-        _resetText = Text("等待额度数据", 21, FontWeights.Medium, Color.FromArgb(158, 255, 255, 255));
+        _resetText = Text(AppText.WaitingForQuota, AppText.CurrentLanguage == AppLanguage.English ? 18 : 21, FontWeights.Medium, Color.FromArgb(158, 255, 255, 255));
         Canvas.SetLeft(_resetText, 30);
         Canvas.SetTop(_resetText, 82);
         _summary.Children.Add(_resetText);
@@ -134,7 +135,7 @@ internal sealed class MainWindow : Window
         Canvas.SetTop(_percentText, 21);
         _summary.Children.Add(_percentText);
 
-        _remainingText = Text("剩余", 19, FontWeights.Medium, Color.FromArgb(158, 255, 255, 255));
+        _remainingText = Text(AppText.Remaining, 19, FontWeights.Medium, Color.FromArgb(158, 255, 255, 255));
         _remainingText.TextAlignment = TextAlignment.Right;
         _remainingText.Width = 90;
         Canvas.SetLeft(_remainingText, 280);
@@ -181,10 +182,11 @@ internal sealed class MainWindow : Window
         Canvas.SetTop(divider, 6);
         _details.Children.Add(divider);
 
-        _detailQuota = AddDetailRow("7 天额度", 36);
-        _detailReset = AddDetailRow("距离重置", 78);
-        _detailPlan = AddDetailRow("订阅计划", 120);
-        _detailUpdated = AddDetailRow("数据更新", 162);
+        _detailQuota = AddDetailRow(AppText.SevenDayQuota, 36);
+        _detailQuota.FontSize = AppText.CurrentLanguage == AppLanguage.English ? 19 : 21;
+        _detailReset = AddDetailRow(AppText.TimeToReset, 78);
+        _detailPlan = AddDetailRow(AppText.SubscriptionPlan, 120);
+        _detailUpdated = AddDetailRow(AppText.DataUpdated, 162);
 
         _stashedPanel = new Grid { Visibility = Visibility.Collapsed, Width = StashedWidth, Height = CollapsedHeight };
         root.Children.Add(_stashedPanel);
@@ -306,43 +308,43 @@ internal sealed class MainWindow : Window
 
     private void UpdateText()
     {
-        _titleText.Text = _snapshot?.WindowTitle ?? "7 天额度";
+        _titleText.Text = _snapshot?.WindowTitle ?? AppText.SevenDayQuota;
         _percentText.Text = _snapshot is null ? "--%" : $"{_snapshot.RoundedRemaining}%";
+        _remainingText.Text = AppText.Remaining;
         _resetText.Text = SummaryResetText();
-        _detailQuota.Text = _snapshot is null ? "--" : $"剩余 {_snapshot.RoundedRemaining}% · 已用 {_snapshot.RoundedUsed}%";
+        _detailQuota.Text = _snapshot is null ? "--" : AppText.QuotaUsage(_snapshot.RoundedRemaining, _snapshot.RoundedUsed);
         _detailReset.Text = ExactResetText();
         _detailPlan.Text = _snapshot?.ReadablePlan ?? "--";
         _detailUpdated.Text = DataAgeText();
+        UpdateAccessibility();
     }
 
     private string SummaryResetText()
     {
-        if (_snapshot?.ResetsAt is not { } reset) return _snapshot is null ? "等待额度数据" : "重置时间未知";
+        if (_snapshot?.ResetsAt is not { } reset) return _snapshot is null ? AppText.WaitingForQuota : AppText.ResetTimeUnknown;
         var remaining = reset - DateTimeOffset.Now;
-        if (remaining <= TimeSpan.Zero) return "即将重置";
+        if (remaining <= TimeSpan.Zero) return AppText.ResettingSoon;
         var days = (int)remaining.TotalDays;
         var hours = remaining.Hours;
-        return days > 0 ? $"{days} 天 {hours} 小时后重置" : $"{Math.Max(1, hours)} 小时后重置";
+        var minutes = Math.Max(1, remaining.Minutes);
+        return AppText.ResetCountdown(days, hours, minutes, includeResetPrefix: true);
     }
 
     private string ExactResetText()
     {
         if (_snapshot?.ResetsAt is not { } reset) return "--";
         var remaining = reset - DateTimeOffset.Now;
-        if (remaining <= TimeSpan.Zero) return "即将重置";
+        if (remaining <= TimeSpan.Zero) return AppText.ResettingSoon;
         var days = (int)remaining.TotalDays;
         var hours = remaining.Hours;
-        return days > 0 ? $"{days} 天 {hours} 小时" : $"{Math.Max(1, hours)} 小时";
+        var minutes = Math.Max(1, remaining.Minutes);
+        return AppText.ResetCountdown(days, hours, minutes, includeResetPrefix: false);
     }
 
     private string DataAgeText()
     {
         if (_snapshot is null) return "--";
-        var age = DateTimeOffset.Now - _snapshot.FetchedAt;
-        if (age.TotalSeconds < 60) return $"{Math.Max(0, (int)age.TotalSeconds)} 秒前";
-        if (age.TotalMinutes < 60) return $"{(int)age.TotalMinutes} 分钟前";
-        if (age.TotalHours < 24) return $"{(int)age.TotalHours} 小时前";
-        return $"{(int)age.TotalDays} 天前";
+        return AppText.DataAge(DateTimeOffset.Now - _snapshot.FetchedAt);
     }
 
     private void SetExpanded(bool expanded, bool save)
@@ -354,6 +356,7 @@ internal sealed class MainWindow : Window
             Height = expanded ? ExpandedHeight : CollapsedHeight;
             _details.Visibility = expanded ? Visibility.Visible : Visibility.Collapsed;
         }
+        UpdateAccessibility();
         if (save) SaveSettings();
     }
 
@@ -378,6 +381,7 @@ internal sealed class MainWindow : Window
         _shell.CornerRadius = side == EdgeSide.Left
             ? new CornerRadius(0, 36, 36, 0)
             : new CornerRadius(36, 0, 0, 36);
+        UpdateAccessibility();
         if (save) SaveSettings();
     }
 
@@ -393,6 +397,7 @@ internal sealed class MainWindow : Window
         _details.Visibility = _expanded ? Visibility.Visible : Visibility.Collapsed;
         _stashedPanel.Visibility = Visibility.Collapsed;
         _shell.CornerRadius = new CornerRadius(36);
+        UpdateAccessibility();
     }
 
     private void OnMouseEntered(object sender, MouseEventArgs e)
@@ -492,11 +497,11 @@ internal sealed class MainWindow : Window
     private ContextMenu BuildContextMenu()
     {
         var menu = new ContextMenu();
-        var refresh = new MenuItem { Header = "刷新额度" };
+        var refresh = new MenuItem { Header = AppText.RefreshQuota };
         refresh.Click += (_, _) => RefreshRequested?.Invoke(this, EventArgs.Empty);
         menu.Items.Add(refresh);
 
-        var launch = new MenuItem { Header = "登录时启动", IsCheckable = true, IsChecked = StartupManager.IsEnabled };
+        var launch = new MenuItem { Header = AppText.LaunchAtLogin, IsCheckable = true, IsChecked = StartupManager.IsEnabled };
         launch.Click += (_, _) =>
         {
             try
@@ -505,27 +510,27 @@ internal sealed class MainWindow : Window
             }
             catch (Exception error) when (error is InvalidOperationException or UnauthorizedAccessException)
             {
-                MessageBox.Show(error.Message, "无法更新登录启动", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(error.Message, AppText.LaunchUpdateFailed, MessageBoxButton.OK, MessageBoxImage.Information);
                 launch.IsChecked = StartupManager.IsEnabled;
             }
         };
         menu.Items.Add(launch);
         menu.Items.Add(new Separator());
 
-        var reset = new MenuItem { Header = "重置卡片位置" };
+        var reset = new MenuItem { Header = AppText.ResetCardPosition };
         reset.Click += (_, _) => ResetPosition();
         menu.Items.Add(reset);
 
-        var about = new MenuItem { Header = "关于与隐私" };
+        var about = new MenuItem { Header = AppText.AboutAndPrivacy };
         about.Click += (_, _) => MessageBox.Show(
-            "非官方本机工具，与 OpenAI 无隶属或背书关系。\n\n工具只读取本机 Codex 运行事件中的额度字段，不读取账号凭据，不上传数据，也不包含遥测。",
-            "Quota Grove · 额度森林",
+            AppText.AboutMessage,
+            AppText.AboutTitle,
             MessageBoxButton.OK,
             MessageBoxImage.Information);
         menu.Items.Add(about);
         menu.Items.Add(new Separator());
 
-        var quit = new MenuItem { Header = "退出 Quota Grove" };
+        var quit = new MenuItem { Header = AppText.Quit };
         quit.Click += (_, _) => Application.Current.Shutdown();
         menu.Items.Add(quit);
         return menu;
@@ -595,6 +600,18 @@ internal sealed class MainWindow : Window
     private static Color ParseColor(string hex) => (Color)ColorConverter.ConvertFromString(hex)!;
 
     private static Color WithAlpha(Color color, byte alpha) => Color.FromArgb(alpha, color.R, color.G, color.B);
+
+    private void UpdateAccessibility()
+    {
+        QuotaTheme? theme = _snapshot is null ? null : QuotaThemes.Select(_snapshot.RemainingPercent);
+        AutomationProperties.SetName(_shell, AppText.AccessibilityName(
+            _snapshot?.WindowTitle ?? AppText.SevenDayQuota,
+            _snapshot?.RoundedRemaining,
+            theme,
+            _isStashed,
+            _expanded));
+        AutomationProperties.SetHelpText(_shell, AppText.AccessibilityHelp);
+    }
 
     private static LinearGradientBrush ProgressGradient(Color accent, bool vertical = false)
     {

@@ -50,7 +50,7 @@ final class LaunchAtLoginManager {
         case missingExecutable
 
         var errorDescription: String? {
-            "无法确定应用可执行文件位置"
+            AppText.missingExecutable
         }
     }
 }

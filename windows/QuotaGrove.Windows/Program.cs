@@ -1,4 +1,5 @@
 using System.IO;
+using System.Globalization;
 using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
@@ -11,6 +12,7 @@ internal static class Program
     [STAThread]
     public static int Main(string[] args)
     {
+        ApplyLanguageOverride(args);
         var application = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
         if (args.Contains("--smoke-test", StringComparer.OrdinalIgnoreCase))
         {
@@ -72,6 +74,17 @@ internal static class Program
                 refreshGate.Release();
             }
         }
+    }
+
+    private static void ApplyLanguageOverride(string[] args)
+    {
+        var languageIndex = Array.FindIndex(args, value => value.Equals("--language", StringComparison.OrdinalIgnoreCase));
+        if (languageIndex < 0 || args.Length <= languageIndex + 1) return;
+        var culture = args[languageIndex + 1].StartsWith("zh", StringComparison.OrdinalIgnoreCase)
+            ? CultureInfo.GetCultureInfo("zh-CN")
+            : CultureInfo.GetCultureInfo("en-US");
+        CultureInfo.CurrentCulture = culture;
+        CultureInfo.CurrentUICulture = culture;
     }
 
     private static int RunPreview(Application application, double percent, string path, bool expanded, bool deleteAfter)

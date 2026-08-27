@@ -5,6 +5,7 @@ Windows 版使用 .NET 8 WPF 实现，与 macOS 版共享额度解析规则、�
 ## 支持范围
 
 - Windows 10/11 x64。
+- 根据 Windows 显示语言自动使用中文或英文；中文系统显示中文，其他系统默认显示英文。
 - 收起卡片 `400 × 160 DIP`，单击展开为 `400 × 356 DIP`。
 - 双击刷新、拖动定位、左右屏幕边缘收纳、悬停滑出。
 - 右键刷新、管理登录启动、重置位置、查看隐私说明和退出。
@@ -37,4 +38,4 @@ dotnet publish windows/QuotaGrove.Windows/QuotaGrove.Windows.csproj `
 
 生成的 `QuotaGrove.exe` 是自包含版本，不要求用户预先安装 .NET。当前公开构建未购买 Windows 代码签名证书，首次运行可能出现 Microsoft Defender SmartScreen 提示。
 
-Windows 自动构建会同时运行 20 项自检、启动可执行文件，并渲染收起、展开和 1% 废土三个预览图作为验收证据。
+Windows 自动构建会同时运行 28 项自检、启动可执行文件，并渲染中英文收起态、英文展开态和 1% 废土预览图作为验收证据。

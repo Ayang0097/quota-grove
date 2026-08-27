@@ -42,11 +42,6 @@ enum QuotaTheme: String, CaseIterable, Codable {
     }
 
     var accessibilityName: String {
-        switch self {
-        case .forest: return "额度充足"
-        case .autumn: return "额度偏低"
-        case .apocalypse: return "额度紧张"
-        case .wasteland: return "额度即将耗尽"
-        }
+        AppText.themeAccessibilityName(self)
     }
 }

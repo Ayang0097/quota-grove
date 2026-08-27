@@ -54,7 +54,16 @@ public static class SelfTestRunner
         const string fallback = "{\"payload\":{\"rate_limits\":{\"primary\":{\"used_percent\":20,\"window_minutes\":60},\"secondary\":{\"used_percent\":40,\"window_minutes\":300}}}}";
         var fallbackSnapshot = QuotaEventParser.ParseLine(fallback);
         Expect(fallbackSnapshot?.WindowMinutes == 300, "缺少 7 天窗口时选择最长实际窗口");
-        Expect(fallbackSnapshot?.WindowTitle == "5 小时额度", "实际窗口标题不得伪装成 7 天");
+        Expect(fallbackSnapshot?.WindowTitleFor(AppLanguage.Chinese) == "5 小时额度", "实际窗口标题不得伪装成 7 天");
+
+        Expect(AppText.Resolve(["zh-CN"]) == AppLanguage.Chinese, "简体中文系统应显示中文");
+        Expect(AppText.Resolve(["zh-Hant-TW"]) == AppLanguage.Chinese, "繁体中文系统应显示中文");
+        Expect(AppText.Resolve(["en-US"]) == AppLanguage.English, "英文系统应显示英文");
+        Expect(AppText.Resolve([]) == AppLanguage.English, "未知系统语言应安全回退英文");
+        Expect(AppText.WindowTitle(10_080, AppLanguage.Chinese) == "7 天额度", "中文额度标题应正确");
+        Expect(AppText.WindowTitle(10_080, AppLanguage.English) == "7-day quota", "英文额度标题应正确");
+        Expect(AppText.QuotaUsage(54, 46, AppLanguage.Chinese) == "剩余 54% · 已用 46%", "中文额度详情应正确");
+        Expect(AppText.QuotaUsage(54, 46, AppLanguage.English) == "54% left · 46% used", "英文额度详情应正确");
 
         return new SelfTestReport(passed, failures);
 

@@ -1,0 +1,126 @@
+import Foundation
+
+enum AppLanguage: String, Equatable {
+    case chinese
+    case english
+
+    static var system: AppLanguage {
+        resolve(preferredLanguages: Locale.preferredLanguages)
+    }
+
+    static func resolve(preferredLanguages: [String]) -> AppLanguage {
+        guard let primary = preferredLanguages.first else { return .english }
+        let normalized = primary.replacingOccurrences(of: "_", with: "-").lowercased()
+        return normalized == "zh" || normalized.hasPrefix("zh-") ? .chinese : .english
+    }
+}
+
+enum AppText {
+    static func localized(_ chinese: String, _ english: String, language: AppLanguage = .system) -> String {
+        language == .chinese ? chinese : english
+    }
+
+    static func windowTitle(minutes: Int, language: AppLanguage = .system) -> String {
+        if minutes == 10_080 { return localized("7 天额度", "7-day quota", language: language) }
+        if minutes % 1_440 == 0 {
+            let days = minutes / 1_440
+            return localized("\(days) 天额度", "\(days)-day quota", language: language)
+        }
+        if minutes % 60 == 0 {
+            let hours = minutes / 60
+            return localized("\(hours) 小时额度", "\(hours)-hour quota", language: language)
+        }
+        return localized("\(minutes) 分钟额度", "\(minutes)-minute quota", language: language)
+    }
+
+    static var sevenDayQuota: String { localized("7 天额度", "7-day quota") }
+    static var remaining: String { localized("剩余", "Remaining") }
+    static var waitingForQuota: String { localized("等待额度数据", "Waiting for quota data") }
+    static var resetTimeUnknown: String { localized("重置时间未知", "Reset time unknown") }
+    static var resettingSoon: String { localized("即将重置", "Resetting soon") }
+    static var timeToReset: String { localized("距离重置", "Time to reset") }
+    static var subscriptionPlan: String { localized("订阅计划", "Plan") }
+    static var dataUpdated: String { localized("数据更新", "Updated") }
+    static var noData: String { localized("暂无数据", "No data") }
+
+    static func quotaUsage(remaining: Int, used: Int, language: AppLanguage = .system) -> String {
+        localized("剩余 \(remaining)% · 已用 \(used)%", "\(remaining)% left · \(used)% used", language: language)
+    }
+
+    static func resetCountdown(days: Int, hours: Int, minutes: Int, includeResetPrefix: Bool, language: AppLanguage = .system) -> String {
+        if language == .chinese {
+            let value = days > 0 ? "\(days) 天 \(hours) 小时" : "\(hours) 小时 \(minutes) 分钟"
+            return includeResetPrefix ? "\(value)后重置" : value
+        }
+        let value = days > 0 ? "\(days)d \(hours)h" : "\(hours)h \(minutes)m"
+        return includeResetPrefix ? "Resets in \(value)" : value
+    }
+
+    static func dataAge(seconds: Int, language: AppLanguage = .system) -> String {
+        if language == .chinese {
+            switch seconds {
+            case 0...4: return "刚刚"
+            case 5..<60: return "\(seconds) 秒前"
+            case 60..<3_600: return "\(seconds / 60) 分钟前"
+            default: return "\(seconds / 3_600) 小时前"
+            }
+        }
+        switch seconds {
+        case 0...4: return "Just now"
+        case 5..<60: return "\(seconds)s ago"
+        case 60..<3_600: return "\(seconds / 60)m ago"
+        default: return "\(seconds / 3_600)h ago"
+        }
+    }
+
+    static var refreshQuota: String { localized("刷新额度", "Refresh quota") }
+    static var launchAtLogin: String { localized("登录时启动", "Launch at login") }
+    static var resetCardPosition: String { localized("重置卡片位置", "Reset card position") }
+    static var aboutAndPrivacy: String { localized("关于与隐私", "About & privacy") }
+    static var quit: String { localized("退出 Quota Grove", "Quit Quota Grove") }
+    static var launchUpdateFailed: String { localized("无法更新登录启动", "Couldn’t update launch at login") }
+    static var ok: String { localized("好", "OK") }
+    static var aboutTitle: String { localized("Quota Grove · 额度森林", "Quota Grove") }
+    static var aboutMessage: String {
+        localized(
+            "非官方本机工具，与 OpenAI 无隶属或背书关系。\n\n工具只读取本机 Codex 运行事件中的额度字段，不读取账号凭据，不上传数据，也不包含遥测。",
+            "An unofficial local utility with no affiliation with or endorsement by OpenAI.\n\nIt only reads quota fields from local Codex runtime events. It does not read account credentials, upload data, or include telemetry."
+        )
+    }
+
+    static func themeAccessibilityName(_ theme: QuotaTheme) -> String {
+        switch theme {
+        case .forest: return localized("额度充足", "Quota available")
+        case .autumn: return localized("额度偏低", "Quota running low")
+        case .apocalypse: return localized("额度紧张", "Quota nearly depleted")
+        case .wasteland: return localized("额度即将耗尽", "Quota almost exhausted")
+        }
+    }
+
+    static func accessibilityLabel(title: String, remainingPercent: Int?, theme: String, isStashed: Bool, isExpanded: Bool) -> String {
+        let percent = remainingPercent.map { localized("剩余 \($0)%", "\($0)% remaining") } ?? waitingForQuota
+        let mode: String
+        if isStashed {
+            mode = localized("已收纳，悬停显示完整卡片", "Stashed. Hover to reveal the full card")
+        } else {
+            mode = isExpanded
+                ? localized("单击收起，双击刷新", "Click to collapse. Double-click to refresh")
+                : localized("单击展开，双击刷新", "Click to expand. Double-click to refresh")
+        }
+        return localized(
+            "\(title)，\(percent)，\(theme)。\(mode)。",
+            "\(title), \(percent), \(theme). \(mode)."
+        )
+    }
+
+    static var accessibilityHelp: String {
+        localized(
+            "可拖动卡片；拖到屏幕左侧或右侧可收纳。右键打开菜单。",
+            "Drag the card to move it. Drag to either screen edge to stash it. Right-click to open the menu."
+        )
+    }
+
+    static var missingExecutable: String {
+        localized("无法确定应用可执行文件位置", "Couldn’t locate the application executable")
+    }
+}

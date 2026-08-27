@@ -61,6 +61,7 @@ jobs:
           $collapsed = (Resolve-Path "dist/previews").Path + "\collapsed-54.png"
           $expanded = (Resolve-Path "dist/previews").Path + "\expanded-54.png"
           $wasteland = (Resolve-Path "dist/previews").Path + "\wasteland-1.png"
+          $chinese = (Resolve-Path "dist/previews").Path + "\collapsed-zh-54.png"
 
           $renderCollapsed = Start-Process -FilePath $exe -ArgumentList @("--render-preview", "54", $collapsed) -Wait -PassThru
           if ($renderCollapsed.ExitCode -ne 0) { throw "Collapsed preview failed: $($renderCollapsed.ExitCode)" }
@@ -71,7 +72,10 @@ jobs:
           $renderWasteland = Start-Process -FilePath $exe -ArgumentList @("--render-preview", "1", $wasteland) -Wait -PassThru
           if ($renderWasteland.ExitCode -ne 0) { throw "Wasteland preview failed: $($renderWasteland.ExitCode)" }
 
-          Get-Item $collapsed, $expanded, $wasteland | ForEach-Object {
+          $renderChinese = Start-Process -FilePath $exe -ArgumentList @("--language", "zh", "--render-preview", "54", $chinese) -Wait -PassThru
+          if ($renderChinese.ExitCode -ne 0) { throw "Chinese preview failed: $($renderChinese.ExitCode)" }
+
+          Get-Item $collapsed, $expanded, $wasteland, $chinese | ForEach-Object {
             if ($_.Length -lt 10000) { throw "Preview is unexpectedly small: $($_.FullName)" }
           }
 

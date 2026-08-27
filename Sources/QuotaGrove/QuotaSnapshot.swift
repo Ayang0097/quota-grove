@@ -10,10 +10,11 @@ struct QuotaSnapshot: Codable, Equatable {
     let planType: String?
 
     var windowTitle: String {
-        if windowMinutes == 10_080 { return "7 天额度" }
-        if windowMinutes % 1_440 == 0 { return "\(windowMinutes / 1_440) 天额度" }
-        if windowMinutes % 60 == 0 { return "\(windowMinutes / 60) 小时额度" }
-        return "\(windowMinutes) 分钟额度"
+        AppText.windowTitle(minutes: windowMinutes)
+    }
+
+    func windowTitle(language: AppLanguage) -> String {
+        AppText.windowTitle(minutes: windowMinutes, language: language)
     }
 
     var roundedRemaining: Int {

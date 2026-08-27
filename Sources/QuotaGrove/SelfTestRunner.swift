@@ -60,10 +60,19 @@ enum SelfTestRunner {
             let fallback = Data(#"{"payload":{"rate_limits":{"primary":{"used_percent":20,"window_minutes":60},"secondary":{"used_percent":40,"window_minutes":300}}}}"#.utf8)
             let snapshot = try QuotaEventParser.parse(line: fallback)
             expect(snapshot?.windowMinutes == 300, "缺少 7 天窗口时选择最长实际窗口", report: &report)
-            expect(snapshot?.windowTitle == "5 小时额度", "实际窗口标题不得伪装成 7 天", report: &report)
+            expect(snapshot?.windowTitle(language: .chinese) == "5 小时额度", "实际窗口标题不得伪装成 7 天", report: &report)
         } catch {
             report.failures.append("实际窗口回退：\(error.localizedDescription)")
         }
+
+        expect(AppLanguage.resolve(preferredLanguages: ["zh-CN"]) == .chinese, "简体中文系统应显示中文", report: &report)
+        expect(AppLanguage.resolve(preferredLanguages: ["zh-Hant-TW"]) == .chinese, "繁体中文系统应显示中文", report: &report)
+        expect(AppLanguage.resolve(preferredLanguages: ["en-US"]) == .english, "英文系统应显示英文", report: &report)
+        expect(AppLanguage.resolve(preferredLanguages: []) == .english, "未知系统语言应安全回退英文", report: &report)
+        expect(AppText.windowTitle(minutes: 10_080, language: .chinese) == "7 天额度", "中文额度标题应正确", report: &report)
+        expect(AppText.windowTitle(minutes: 10_080, language: .english) == "7-day quota", "英文额度标题应正确", report: &report)
+        expect(AppText.quotaUsage(remaining: 54, used: 46, language: .chinese) == "剩余 54% · 已用 46%", "中文额度详情应正确", report: &report)
+        expect(AppText.quotaUsage(remaining: 54, used: 46, language: .english) == "54% left · 46% used", "英文额度详情应正确", report: &report)
 
         return report
     }
