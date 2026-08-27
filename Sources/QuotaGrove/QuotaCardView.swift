@@ -420,7 +420,7 @@ final class QuotaCardView: NSView {
 
         let titleWidth = (title as NSString).size(withAttributes: [.font: titleFont]).width
         let markX = leftInset + titleWidth + 6
-        drawCodexIcon(at: NSPoint(x: markX, y: top - 29), size: 14)
+        drawCodexIcon(at: NSPoint(x: markX, y: top - 29.5), size: 15)
 
         let percent = snapshot.map { "\($0.roundedRemaining)%" } ?? "--%"
         let percentFont = NSFont.monospacedDigitSystemFont(ofSize: 24, weight: .medium)
@@ -488,14 +488,23 @@ final class QuotaCardView: NSView {
             return
         }
 
+        let iconRect = NSRect(x: point.x, y: point.y, width: size, height: size)
+        let roundedClip = NSBezierPath(
+            roundedRect: iconRect,
+            xRadius: size * 0.24,
+            yRadius: size * 0.24
+        )
+        NSGraphicsContext.saveGraphicsState()
+        roundedClip.addClip()
         codexIcon.draw(
-            in: NSRect(x: point.x, y: point.y, width: size, height: size),
+            in: iconRect,
             from: .zero,
             operation: .sourceOver,
             fraction: 1,
             respectFlipped: false,
             hints: [.interpolation: NSImageInterpolation.high]
         )
+        NSGraphicsContext.restoreGraphicsState()
     }
 
     private func drawFallbackMark(at point: NSPoint, size: CGFloat) {
