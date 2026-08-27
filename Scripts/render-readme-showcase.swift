@@ -278,7 +278,7 @@ do {
         ThemeSample(percent: 82, title: "额度充足", range: "50–100%", accent: NSColor(calibratedRed: 0.47, green: 0.88, blue: 0.67, alpha: 1), image: runPreview(percent: 82, name: "forest")),
         ThemeSample(percent: 38, title: "额度偏低", range: "20–49%", accent: NSColor(calibratedRed: 0.96, green: 0.72, blue: 0.29, alpha: 1), image: runPreview(percent: 38, name: "autumn")),
         ThemeSample(percent: 12, title: "额度紧张", range: "3–19%", accent: NSColor(calibratedRed: 0.94, green: 0.29, blue: 0.28, alpha: 1), image: runPreview(percent: 12, name: "apocalypse")),
-        ThemeSample(percent: 1, title: "即将耗尽", range: "0–2%", accent: NSColor(calibratedRed: 0.78, green: 0.29, blue: 0.28, alpha: 1), image: runPreview(percent: 1, name: "wasteland"))
+        ThemeSample(percent: 1, title: "即将耗尽", range: "0–2%", accent: NSColor(calibratedWhite: 0.94, alpha: 1), image: runPreview(percent: 1, name: "wasteland"))
     ]
     let collapsed = try runPreview(percent: 54, name: "collapsed")
     let expanded = try runPreview(percent: 54, name: "expanded", expanded: true)

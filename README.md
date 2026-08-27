@@ -73,7 +73,7 @@ Quota Grove 是一个原生 macOS 桌面悬浮卡片，用环境变化显示本�
 "~/Applications/Quota Grove.app/Contents/MacOS/QuotaGrove" --self-test
 ```
 
-`--snapshot-json` 只输出标准化额度快照。`--self-test` 覆盖 19 项边界与解析检查，包括 PRD 指定的 50、49、20、19、3、2、1、0 八个主题边界。
+`--snapshot-json` 只输出标准化额度快照。`--self-test` 覆盖 20 项边界、视觉规则与解析检查，包括 PRD 指定的 50、49、20、19、3、2、1、0 八个主题边界。
 
 ## 手动构建
 

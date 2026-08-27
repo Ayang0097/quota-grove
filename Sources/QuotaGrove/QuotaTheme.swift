@@ -32,6 +32,15 @@ enum QuotaTheme: String, CaseIterable, Codable {
         }
     }
 
+    var borderAccent: NSColor {
+        switch self {
+        case .wasteland:
+            return NSColor(calibratedWhite: 0.94, alpha: 1)
+        default:
+            return accent
+        }
+    }
+
     var accessibilityName: String {
         switch self {
         case .forest: return "额度充足"

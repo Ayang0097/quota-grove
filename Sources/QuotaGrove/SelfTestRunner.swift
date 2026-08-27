@@ -32,6 +32,7 @@ enum SelfTestRunner {
         expect(QuotaTheme.autumn.accent != QuotaTheme.forest.accent, "秋季进度条不得使用森林绿", report: &report)
         expect(QuotaTheme.apocalypse.accent != QuotaTheme.forest.accent, "末日进度条不得使用森林绿", report: &report)
         expect(QuotaTheme.wasteland.accent != QuotaTheme.forest.accent, "废土进度条不得使用森林绿", report: &report)
+        expect(QuotaTheme.wasteland.borderAccent != QuotaTheme.wasteland.accent, "废土边框必须使用灰白色并与红色进度警示区分", report: &report)
 
         do {
             let line = Data(#"{"timestamp":"2026-08-27T07:48:05.500Z","payload":{"type":"token_count","rate_limits":{"primary":{"used_percent":31.0,"window_minutes":10080,"resets_at":1788405013},"secondary":{"used_percent":8,"window_minutes":300,"resets_at":1787810000},"plan_type":"prolite"}}}"#.utf8)

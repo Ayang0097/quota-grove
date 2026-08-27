@@ -237,7 +237,7 @@ final class QuotaCardView: NSView {
     }
 
     private var currentBorderColor: NSColor {
-        let accent = currentTheme.accent
+        let accent = currentTheme.borderAccent
         return (accent.blended(withFraction: 0.12, of: .black) ?? accent)
             .withAlphaComponent(0.80)
     }
