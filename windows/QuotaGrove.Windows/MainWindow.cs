@@ -115,7 +115,7 @@ internal sealed class MainWindow : Window
 
         var titlePanel = new StackPanel { Orientation = Orientation.Horizontal };
         Canvas.SetLeft(titlePanel, ContentInset);
-        Canvas.SetTop(titlePanel, 29);
+        Canvas.SetTop(titlePanel, 21);
         _titleText = Text(AppText.SevenDayQuota, 17, FontWeights.Medium, Color.FromArgb(245, 255, 255, 255));
         titlePanel.Children.Add(_titleText);
         titlePanel.Children.Add(new Image
@@ -129,7 +129,7 @@ internal sealed class MainWindow : Window
 
         _resetText = Text(AppText.WaitingForQuota, 14, FontWeights.Medium, Color.FromArgb(158, 255, 255, 255));
         Canvas.SetLeft(_resetText, ContentInset);
-        Canvas.SetTop(_resetText, 55);
+        Canvas.SetTop(_resetText, 48);
         _summary.Children.Add(_resetText);
 
         _percentText = Text("--%", 31, FontWeights.SemiBold, Colors.White);
@@ -155,7 +155,7 @@ internal sealed class MainWindow : Window
             Background = new SolidColorBrush(Color.FromArgb(112, 0, 0, 0))
         };
         Canvas.SetLeft(progressTrack, ContentInset);
-        Canvas.SetTop(progressTrack, 88);
+        Canvas.SetTop(progressTrack, 84);
         _summary.Children.Add(progressTrack);
 
         _progressFill = new Border
