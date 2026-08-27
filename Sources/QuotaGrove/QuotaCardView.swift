@@ -401,30 +401,32 @@ final class QuotaCardView: NSView {
 
     private func drawSummary() {
         let top = bounds.maxY
+        let leftInset: CGFloat = 15
+        let contentRight: CGFloat = 185
         let title = snapshot?.windowTitle ?? "7 天额度"
-        let titleFont = NSFont.systemFont(ofSize: 13.5, weight: .medium)
+        let titleFont = NSFont.systemFont(ofSize: 15, weight: .semibold)
         let titleColor = NSColor.white.withAlphaComponent(0.96)
-        drawText(title, at: NSPoint(x: 12, y: top - 26), font: titleFont, color: titleColor)
+        drawText(title, at: NSPoint(x: leftInset, y: top - 31), font: titleFont, color: titleColor)
 
         let titleWidth = (title as NSString).size(withAttributes: [.font: titleFont]).width
-        let markX = 12 + titleWidth + 6
-        drawMark(at: NSPoint(x: markX, y: top - 25), size: 14)
+        let markX = leftInset + titleWidth + 6
+        drawMark(at: NSPoint(x: markX, y: top - 29), size: 14)
 
         let percent = snapshot.map { "\($0.roundedRemaining)%" } ?? "--%"
         let percentFont = NSFont.monospacedDigitSystemFont(ofSize: 25, weight: .bold)
         let percentWidth = (percent as NSString).size(withAttributes: [.font: percentFont]).width
         let staleBadgeX = markX + 19
-        if isStale, staleBadgeX + 27 <= 188 - percentWidth - 5 {
-            drawStaleBadge(at: NSPoint(x: staleBadgeX, y: top - 27))
+        if isStale, staleBadgeX + 24 <= contentRight - percentWidth - 5 {
+            drawStaleBadge(at: NSPoint(x: staleBadgeX, y: top - 31))
         }
 
         let resetText = summaryResetText()
-        drawText(resetText, at: NSPoint(x: 12, y: top - 45), font: .systemFont(ofSize: 10.5, weight: .medium), color: .white.withAlphaComponent(isStale ? 0.78 : 0.62))
+        drawText(resetText, at: NSPoint(x: leftInset, y: top - 48), font: .systemFont(ofSize: 10.5, weight: .medium), color: .white.withAlphaComponent(isStale ? 0.78 : 0.62))
 
-        drawText(percent, at: NSPoint(x: 188, y: top - 43), font: percentFont, color: .white, alignment: .right)
-        drawText("剩余", at: NSPoint(x: 188, y: top - 56), font: .systemFont(ofSize: 9.5, weight: .medium), color: .white.withAlphaComponent(0.62), alignment: .right)
+        drawText(percent, at: NSPoint(x: contentRight, y: top - 40), font: percentFont, color: .white, alignment: .right)
+        drawText("剩余", at: NSPoint(x: contentRight, y: top - 49), font: .systemFont(ofSize: 9.5, weight: .medium), color: .white.withAlphaComponent(0.62), alignment: .right)
 
-        let barRect = NSRect(x: 12, y: top - 71, width: 176, height: 5)
+        let barRect = NSRect(x: leftInset, y: top - 68, width: contentRight - leftInset, height: 5)
         let track = NSBezierPath(roundedRect: barRect, xRadius: 2.5, yRadius: 2.5)
         NSColor(calibratedWhite: 0, alpha: 0.42).setFill()
         track.fill()
@@ -447,8 +449,8 @@ final class QuotaCardView: NSView {
         let top = bounds.maxY
         NSColor.white.withAlphaComponent(0.16).setStroke()
         let divider = NSBezierPath()
-        divider.move(to: NSPoint(x: 12, y: top - 83))
-        divider.line(to: NSPoint(x: 188, y: top - 83))
+        divider.move(to: NSPoint(x: 15, y: top - 83))
+        divider.line(to: NSPoint(x: 185, y: top - 83))
         divider.lineWidth = 1
         divider.stroke()
 
@@ -465,8 +467,8 @@ final class QuotaCardView: NSView {
         ]
 
         for row in rows {
-            drawText(row.0, at: NSPoint(x: 12, y: row.2), font: font, color: labelColor)
-            drawText(row.1, at: NSPoint(x: 188, y: row.2), font: valueFont, color: valueColor, alignment: .right)
+            drawText(row.0, at: NSPoint(x: 15, y: row.2), font: font, color: labelColor)
+            drawText(row.1, at: NSPoint(x: 185, y: row.2), font: valueFont, color: valueColor, alignment: .right)
         }
     }
 
@@ -500,7 +502,7 @@ final class QuotaCardView: NSView {
     }
 
     private func drawStaleBadge(at point: NSPoint) {
-        let rect = NSRect(x: point.x, y: point.y, width: 27, height: 12)
+        let rect = NSRect(x: point.x, y: point.y, width: 24, height: 12)
         let path = NSBezierPath(roundedRect: rect, xRadius: 6, yRadius: 6)
         let amber = NSColor(calibratedRed: 1, green: 0.72, blue: 0.3, alpha: 1)
         amber.withAlphaComponent(0.16).setFill()
@@ -510,7 +512,7 @@ final class QuotaCardView: NSView {
         path.stroke()
         drawText(
             "陈旧",
-            at: NSPoint(x: rect.minX + 5, y: rect.minY + 1),
+            at: NSPoint(x: rect.minX + 3.5, y: rect.minY + 1),
             font: .systemFont(ofSize: 8.5, weight: .semibold),
             color: amber.withAlphaComponent(0.9)
         )
