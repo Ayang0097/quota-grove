@@ -414,12 +414,12 @@ final class QuotaCardView: NSView {
         let leftInset: CGFloat = 15
         let contentRight: CGFloat = 185
         let title = snapshot?.windowTitle ?? "7 天额度"
-        let titleFont = NSFont.systemFont(ofSize: 14, weight: .medium)
+        let titleFont = NSFont.systemFont(ofSize: 13, weight: .medium)
         let titleColor = NSColor.white.withAlphaComponent(0.96)
         drawText(title, at: NSPoint(x: leftInset, y: top - 31), font: titleFont, color: titleColor)
 
         let titleWidth = (title as NSString).size(withAttributes: [.font: titleFont]).width
-        let markX = leftInset + titleWidth + 6
+        let markX = leftInset + titleWidth + 4
         drawCodexIcon(at: NSPoint(x: markX, y: top - 29.5), size: 15)
 
         let percent = snapshot.map { "\($0.roundedRemaining)%" } ?? "--%"
