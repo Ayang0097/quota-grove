@@ -123,3 +123,11 @@ jobs:
             dist/Quota-Grove-windows-x64.zip
             dist/SHA256SUMS-windows.txt
             dist/previews/*.png
+
+      - name: Upload lightweight Windows previews
+        uses: actions/upload-artifact@v4
+        with:
+          name: quota-grove-windows-previews
+          if-no-files-found: error
+          retention-days: 14
+          path: dist/previews/*.png
