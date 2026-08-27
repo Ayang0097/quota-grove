@@ -1,0 +1,98 @@
+name: Windows build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "windows/**"
+      - "bg/**"
+      - "Assets/CodexIcon.png"
+      - ".github/workflows/windows-build.yml"
+  pull_request:
+    paths:
+      - "windows/**"
+      - "bg/**"
+      - "Assets/CodexIcon.png"
+      - ".github/workflows/windows-build.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows-x64:
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Run parser and boundary self-tests
+        run: dotnet run --project windows/QuotaGrove.SelfTest/QuotaGrove.SelfTest.csproj --configuration Release
+
+      - name: Publish self-contained Windows app
+        run: >-
+          dotnet publish windows/QuotaGrove.Windows/QuotaGrove.Windows.csproj
+          --configuration Release
+          --runtime win-x64
+          --self-contained true
+          --output dist/windows-x64
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:DebugType=None
+          -p:DebugSymbols=false
+
+      - name: Smoke-test executable and render previews
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $exe = (Resolve-Path "dist/windows-x64/QuotaGrove.exe").Path
+          New-Item -ItemType Directory -Force -Path "dist/previews" | Out-Null
+
+          $smoke = Start-Process -FilePath $exe -ArgumentList @("--smoke-test") -Wait -PassThru
+          if ($smoke.ExitCode -ne 0) { throw "Windows executable smoke test failed: $($smoke.ExitCode)" }
+
+          $collapsed = (Resolve-Path "dist/previews").Path + "\collapsed-54.png"
+          $expanded = (Resolve-Path "dist/previews").Path + "\expanded-54.png"
+          $wasteland = (Resolve-Path "dist/previews").Path + "\wasteland-1.png"
+
+          $renderCollapsed = Start-Process -FilePath $exe -ArgumentList @("--render-preview", "54", $collapsed) -Wait -PassThru
+          if ($renderCollapsed.ExitCode -ne 0) { throw "Collapsed preview failed: $($renderCollapsed.ExitCode)" }
+
+          $renderExpanded = Start-Process -FilePath $exe -ArgumentList @("--render-preview", "54", $expanded, "--expanded") -Wait -PassThru
+          if ($renderExpanded.ExitCode -ne 0) { throw "Expanded preview failed: $($renderExpanded.ExitCode)" }
+
+          $renderWasteland = Start-Process -FilePath $exe -ArgumentList @("--render-preview", "1", $wasteland) -Wait -PassThru
+          if ($renderWasteland.ExitCode -ne 0) { throw "Wasteland preview failed: $($renderWasteland.ExitCode)" }
+
+          Get-Item $collapsed, $expanded, $wasteland | ForEach-Object {
+            if ($_.Length -lt 10000) { throw "Preview is unexpectedly small: $($_.FullName)" }
+          }
+
+      - name: Package portable download
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          Copy-Item "LICENSE", "PRIVACY.md", "THIRD_PARTY_NOTICES.md" -Destination "dist/windows-x64"
+          Copy-Item (Join-Path $env:DOTNET_ROOT "LICENSE.txt") "dist/windows-x64/DOTNET-LICENSE.txt"
+          Copy-Item (Join-Path $env:DOTNET_ROOT "ThirdPartyNotices.txt") "dist/windows-x64/DOTNET-THIRD-PARTY-NOTICES.txt"
+          Compress-Archive -Path "dist/windows-x64/*" -DestinationPath "dist/Quota-Grove-windows-x64.zip" -CompressionLevel Optimal
+          $hash = Get-FileHash "dist/Quota-Grove-windows-x64.zip" -Algorithm SHA256
+          "$($hash.Hash.ToLowerInvariant())  Quota-Grove-windows-x64.zip" | Set-Content "dist/SHA256SUMS-windows.txt" -Encoding ascii
+
+      - name: Upload Windows package and visual evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: quota-grove-windows-x64
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            dist/Quota-Grove-windows-x64.zip
+            dist/SHA256SUMS-windows.txt
+            dist/previews/*.png

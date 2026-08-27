@@ -1,0 +1,67 @@
+namespace QuotaGrove.Core;
+
+public sealed record SelfTestReport(int Passed, IReadOnlyList<string> Failures)
+{
+    public bool Succeeded => Failures.Count == 0;
+}
+
+public static class SelfTestRunner
+{
+    public static SelfTestReport Run()
+    {
+        var passed = 0;
+        var failures = new List<string>();
+
+        foreach (var (percent, expected) in new[]
+        {
+            (50d, QuotaTheme.Forest),
+            (49d, QuotaTheme.Autumn),
+            (20d, QuotaTheme.Autumn),
+            (19d, QuotaTheme.Apocalypse),
+            (3d, QuotaTheme.Apocalypse),
+            (2d, QuotaTheme.Wasteland),
+            (1d, QuotaTheme.Wasteland),
+            (0d, QuotaTheme.Wasteland)
+        })
+        {
+            Expect(QuotaThemes.Select(percent) == expected, $"主题边界 {percent}% 应为 {expected}");
+        }
+
+        Expect(QuotaThemes.Style(QuotaTheme.Autumn).AccentHex != QuotaThemes.Style(QuotaTheme.Forest).AccentHex, "秋季进度条不得使用森林绿");
+        Expect(QuotaThemes.Style(QuotaTheme.Apocalypse).AccentHex != QuotaThemes.Style(QuotaTheme.Forest).AccentHex, "末日进度条不得使用森林绿");
+        Expect(QuotaThemes.Style(QuotaTheme.Wasteland).AccentHex != QuotaThemes.Style(QuotaTheme.Forest).AccentHex, "废土进度条不得使用森林绿");
+        Expect(QuotaThemes.Style(QuotaTheme.Wasteland).BorderHex != QuotaThemes.Style(QuotaTheme.Wasteland).AccentHex, "废土边框必须使用灰白色");
+
+        const string valid = "{\"timestamp\":\"2026-08-27T07:48:05.500Z\",\"payload\":{\"type\":\"token_count\",\"rate_limits\":{\"primary\":{\"used_percent\":31.0,\"window_minutes\":10080,\"resets_at\":1788405013},\"secondary\":{\"used_percent\":8,\"window_minutes\":300,\"resets_at\":1787810000},\"plan_type\":\"prolite\"}}}";
+        var snapshot = QuotaEventParser.ParseLine(valid);
+        Expect(snapshot?.WindowMinutes == 10_080, "优先选择 7 天窗口");
+        Expect(snapshot?.RemainingPercent == 69, "剩余百分比应由已用百分比计算");
+        Expect(snapshot?.ReadablePlan == "Pro Lite", "可靠套餐字段应可读显示");
+        Expect(snapshot?.ResetsAt?.ToUnixTimeSeconds() == 1_788_405_013, "Unix 重置时间应正确解析");
+
+        Expect(QuotaEventParser.ParseLine("{\"payload\":{\"type\":\"message\"}}") is null, "无关事件必须忽略");
+
+        try
+        {
+            _ = QuotaEventParser.ParseLine("{\"payload\":{\"rate_limits\":{\"primary\":{\"used_percent\":101,\"window_minutes\":10080}}}}");
+            failures.Add("异常百分比必须拒绝");
+        }
+        catch (QuotaParseException)
+        {
+            passed++;
+        }
+
+        const string fallback = "{\"payload\":{\"rate_limits\":{\"primary\":{\"used_percent\":20,\"window_minutes\":60},\"secondary\":{\"used_percent\":40,\"window_minutes\":300}}}}";
+        var fallbackSnapshot = QuotaEventParser.ParseLine(fallback);
+        Expect(fallbackSnapshot?.WindowMinutes == 300, "缺少 7 天窗口时选择最长实际窗口");
+        Expect(fallbackSnapshot?.WindowTitle == "5 小时额度", "实际窗口标题不得伪装成 7 天");
+
+        return new SelfTestReport(passed, failures);
+
+        void Expect(bool condition, string message)
+        {
+            if (condition) passed++;
+            else failures.Add(message);
+        }
+    }
+}

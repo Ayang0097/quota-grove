@@ -1,5 +1,7 @@
 .build/
 dist/
+**/bin/
+**/obj/
 .DS_Store
 *.xcuserstate
 test-output*/

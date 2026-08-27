@@ -1,6 +1,6 @@
 # Quota Grove · 额度森林
 
-Quota Grove 是一个原生 macOS 桌面悬浮卡片，用环境变化显示本机 Codex 的 7 天剩余额度和重置时间。
+Quota Grove 是一个支持 macOS 与 Windows 的桌面悬浮卡片，用环境变化显示本机 Codex 的 7 天剩余额度和重置时间。
 
 卡片标题旁的 Codex 图标仅用于标明额度数据来自用户本机的 Codex/ChatGPT 桌面客户端；它不是 Quota Grove 的应用图标、仓库标志或产品品牌。
 
@@ -20,27 +20,33 @@ Quota Grove 是一个原生 macOS 桌面悬浮卡片，用环境变化显示本�
 
 ## 特点
 
-- `200 × 80 pt` 收起卡片，单击展开为 `200 × 178 pt`，宽度不变。
+- macOS 为 `200 × 80 pt` 收起、`200 × 178 pt` 展开；Windows 为 `400 × 160 DIP` 收起、`400 × 356 DIP` 展开。
 - 森林、秋天、末日、废土四套本地绘制主题。
 - 双击刷新；单击与双击互不误触。
 - 任意位置拖动并记住位置；贴到屏幕左右边缘后收纳成 16 pt 的深色主题卡片切片，内嵌竖向额度条。
-- Codex/ChatGPT 桌面客户端退出时自动隐藏，重新运行时出现。
+- macOS 版会跟随 Codex/ChatGPT 桌面客户端显示或隐藏；Windows 版保留最近一次可信快照，Codex 暂时退出时仍可查看。
 - 右键可刷新、重置位置、管理登录启动和退出。
-- 无 Dock 图标、无菜单栏图标、无网络上传、无遥测。
+- 不占用 macOS Dock 或 Windows 任务栏，无网络上传、无遥测。
 
 ## 系统要求
 
-- macOS 13 或更高版本。
-- Apple Silicon Mac（当前构建为 arm64）。
+- macOS 13 或更高版本，Apple Silicon Mac（arm64）；或 Windows 10/11 x64。
 - 本机 Codex/ChatGPT 桌面客户端产生过含额度状态的运行事件。
 
 ## 下载与安装
 
-前往 [GitHub Releases](https://github.com/Ayang0097/quota-grove/releases/latest) 下载最新版 `Quota-Grove-*-macos-arm64.zip`，解压后将 `Quota Grove.app` 拖入“应用程序”文件夹并启动。
+前往 [GitHub Releases](https://github.com/Ayang0097/quota-grove/releases/latest) 下载对应系统版本：
+
+- macOS：`Quota-Grove-*-macos-arm64.zip`，解压后将 `Quota Grove.app` 拖入“应用程序”文件夹。
+- Windows：`Quota-Grove-*-windows-x64.zip`，解压后运行 `QuotaGrove.exe`。这是便携版，不要求预装 .NET。
 
 当前公开构建采用 ad-hoc 签名，尚未经过 Apple Developer ID 公证。首次打开时如果 macOS 提示无法验证开发者，请在 Finder 中按住 Control 点击应用，选择“打开”，然后再次确认“打开”。
 
-## 从源码安装
+Windows 公开构建当前没有商业代码签名证书，首次运行可能出现 Microsoft Defender SmartScreen 提示；请仅从本仓库 Releases 下载，并可使用随包提供的 SHA-256 校验值核对文件。
+
+## 从源码构建
+
+### macOS
 
 在项目目录运行：
 
@@ -56,6 +62,10 @@ Quota Grove 是一个原生 macOS 桌面悬浮卡片，用环境变化显示本�
 
 然后自动启动。右键卡片，勾选“登录时启动”可创建用户级 LaunchAgent，不需要管理员权限。
 
+### Windows
+
+需要 .NET 8 SDK。测试、构建和便携版发布命令见 [Windows 开发说明](windows/README.md)。公开下载包为自包含的 Windows x64 单文件应用。
+
 ## 使用
 
 - 单击：展开或收起。
@@ -66,7 +76,7 @@ Quota Grove 是一个原生 macOS 桌面悬浮卡片，用环境变化显示本�
 
 ## 验证真实数据
 
-应用附带两个不启动窗口的诊断命令：
+macOS 应用附带两个不启动窗口的诊断命令：
 
 ```bash
 "~/Applications/Quota Grove.app/Contents/MacOS/QuotaGrove" --snapshot-json
@@ -94,7 +104,7 @@ swift build
 
 ## 数据与兼容性说明
 
-OpenAI 目前没有为个人订阅公开稳定的“剩余百分比”API。本工具独立解析用户本机 `~/.codex/sessions` 中最近运行事件里的 `rate_limits` 字段，优先选择 10080 分钟的 7 天窗口。
+OpenAI 目前没有为个人订阅公开稳定的“剩余百分比”API。本工具独立解析 macOS 的 `~/.codex/sessions` 或 Windows 的 `%USERPROFILE%\.codex\sessions` 中最近运行事件里的 `rate_limits` 字段，优先选择 10080 分钟的 7 天窗口。Windows 还支持通过 `QUOTA_GROVE_CODEX_HOME` 或 `CODEX_HOME` 指定兼容目录。
 
 该字段属于本机兼容性适配，不是官方稳定接口。暂时无法取得新数据时，工具会继续显示最近可信快照；展开卡片可查看“数据更新”时间。从未取得过数据时显示 `--%`，不会猜测，也不会尝试绕过访问控制。详见 [data-source-notes.md](data-source-notes.md) 与 [PRIVACY.md](PRIVACY.md)。
 

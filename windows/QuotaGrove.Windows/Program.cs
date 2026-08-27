@@ -1,0 +1,118 @@
+using System.IO;
+using System.Threading;
+using System.Windows;
+using System.Windows.Threading;
+using QuotaGrove.Core;
+
+namespace QuotaGrove.Windows;
+
+internal static class Program
+{
+    [STAThread]
+    public static int Main(string[] args)
+    {
+        var application = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
+        if (args.Contains("--smoke-test", StringComparer.OrdinalIgnoreCase))
+        {
+            return RunPreview(application, 54, Path.Combine(Path.GetTempPath(), $"quota-grove-smoke-{Guid.NewGuid():N}.png"), expanded: false, deleteAfter: true);
+        }
+
+        var previewIndex = Array.FindIndex(args, value => value.Equals("--render-preview", StringComparison.OrdinalIgnoreCase));
+        if (previewIndex >= 0 && args.Length > previewIndex + 2 &&
+            double.TryParse(args[previewIndex + 1], System.Globalization.CultureInfo.InvariantCulture, out var previewPercent))
+        {
+            return RunPreview(application, previewPercent, args[previewIndex + 2], args.Contains("--expanded", StringComparer.OrdinalIgnoreCase), deleteAfter: false);
+        }
+
+        using var mutex = new Mutex(initiallyOwned: true, "Local\\Ayang.QuotaGrove.Windows", out var createdNew);
+        if (!createdNew) return 0;
+
+        var store = new SettingsStore();
+        var settings = store.Load();
+        var source = new LocalRateLimitSource();
+        var refreshGate = new SemaphoreSlim(1, 1);
+        MainWindow? window = null;
+        DispatcherTimer? refreshTimer = null;
+
+        application.Startup += async (_, _) =>
+        {
+            window = new MainWindow(settings, store);
+            window.RefreshRequested += async (_, _) => await RefreshAsync();
+            window.Show();
+
+            refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(20) };
+            refreshTimer.Tick += async (_, _) => await RefreshAsync();
+            refreshTimer.Start();
+            await RefreshAsync();
+        };
+
+        application.Exit += (_, _) =>
+        {
+            refreshTimer?.Stop();
+            refreshGate.Dispose();
+        };
+
+        return application.Run();
+
+        async Task RefreshAsync()
+        {
+            if (window is null || !await refreshGate.WaitAsync(0)) return;
+            try
+            {
+                var snapshot = await Task.Run(source.LatestSnapshot);
+                if (snapshot is not null)
+                {
+                    settings.LastSnapshot = snapshot;
+                    window.ApplySnapshot(snapshot);
+                    store.Save(settings);
+                }
+            }
+            finally
+            {
+                refreshGate.Release();
+            }
+        }
+    }
+
+    private static int RunPreview(Application application, double percent, string path, bool expanded, bool deleteAfter)
+    {
+        var exitCode = 0;
+        application.Startup += (_, _) =>
+        {
+            try
+            {
+                var window = new MainWindow(new SettingsState(), settingsStore: null, previewMode: true)
+                {
+                    Left = -10_000,
+                    Top = -10_000
+                };
+                window.ApplySnapshot(QuotaSnapshot.Demo(percent));
+                window.SetExpandedForPreview(expanded);
+                window.ContentRendered += (_, _) =>
+                {
+                    try
+                    {
+                        window.SavePreview(path);
+                        if (deleteAfter) File.Delete(path);
+                    }
+                    catch
+                    {
+                        exitCode = 1;
+                    }
+                    finally
+                    {
+                        window.Close();
+                        application.Shutdown(exitCode);
+                    }
+                };
+                window.Show();
+            }
+            catch
+            {
+                exitCode = 1;
+                application.Shutdown(exitCode);
+            }
+        };
+        return application.Run();
+    }
+}

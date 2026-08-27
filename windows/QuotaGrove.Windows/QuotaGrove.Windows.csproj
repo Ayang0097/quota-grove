@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AssemblyName>QuotaGrove</AssemblyName>
+    <RootNamespace>QuotaGrove.Windows</RootNamespace>
+    <Version>1.1.0</Version>
+    <FileVersion>1.1.0.0</FileVersion>
+    <AssemblyVersion>1.1.0.0</AssemblyVersion>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>QuotaGrove.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../QuotaGrove.Core/QuotaGrove.Core.csproj" />
+    <Resource Include="../../Assets/CodexIcon.png" Link="Assets/CodexIcon.png" />
+    <Resource Include="../../bg/背景百分之50以上.png" Link="Assets/forest.png" />
+    <Resource Include="../../bg/背景百分之50以下.png" Link="Assets/autumn.png" />
+    <Resource Include="../../bg/背景百分之20以下.png" Link="Assets/apocalypse.png" />
+    <Resource Include="../../bg/背景百分之3以下.png" Link="Assets/wasteland.png" />
+  </ItemGroup>
+</Project>
