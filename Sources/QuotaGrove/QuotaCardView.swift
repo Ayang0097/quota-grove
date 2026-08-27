@@ -439,7 +439,7 @@ final class QuotaCardView: NSView {
         let resetText = summaryResetText()
         drawText(resetText, at: NSPoint(x: leftInset, y: top - 48), font: .systemFont(ofSize: 10.5, weight: .medium), color: .white.withAlphaComponent(isStale ? 0.78 : 0.62))
 
-        drawText(percent, at: NSPoint(x: contentRight, y: top - 40), font: percentFont, color: .white, alignment: .right)
+        drawText(percent, at: NSPoint(x: contentRight, y: top - 39), font: percentFont, color: .white, alignment: .right)
         drawText("剩余", at: NSPoint(x: contentRight, y: top - 49), font: .systemFont(ofSize: 9.5, weight: .medium), color: .white.withAlphaComponent(0.62), alignment: .right)
 
         let barRect = NSRect(x: leftInset, y: top - 68, width: contentRight - leftInset, height: 5)
