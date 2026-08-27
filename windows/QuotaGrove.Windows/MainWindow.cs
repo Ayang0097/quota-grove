@@ -187,11 +187,11 @@ internal sealed class MainWindow : Window
         Canvas.SetTop(divider, 4);
         _details.Children.Add(divider);
 
-        _detailQuota = AddDetailRow(AppText.SevenDayQuota, 24);
+        _detailQuota = AddDetailRow(AppText.SevenDayQuota, 20);
         _detailQuota.FontSize = AppText.CurrentLanguage == AppLanguage.English ? 12.5 : 14;
-        _detailReset = AddDetailRow(AppText.TimeToReset, 52);
-        _detailPlan = AddDetailRow(AppText.SubscriptionPlan, 80);
-        _detailUpdated = AddDetailRow(AppText.DataUpdated, 108);
+        _detailReset = AddDetailRow(AppText.TimeToReset, 47);
+        _detailPlan = AddDetailRow(AppText.SubscriptionPlan, 74);
+        _detailUpdated = AddDetailRow(AppText.DataUpdated, 101);
 
         _stashedPanel = new Grid { Visibility = Visibility.Collapsed, Width = StashedWidth, Height = CollapsedHeight };
         root.Children.Add(_stashedPanel);
