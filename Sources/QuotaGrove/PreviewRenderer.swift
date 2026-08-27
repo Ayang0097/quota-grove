@@ -1,14 +1,22 @@
 import AppKit
 
 enum PreviewRenderer {
-    static func render(remainingPercent: Double, expanded: Bool, to url: URL) throws {
+    static func render(
+        remainingPercent: Double,
+        expanded: Bool,
+        stashed: Bool = false,
+        stashedEdge: StashedEdge = .right,
+        to url: URL
+    ) throws {
         let size = NSSize(
-            width: CardWindowController.cardWidth,
-            height: expanded ? CardWindowController.expandedHeight : CardWindowController.collapsedHeight
+            width: stashed ? CardWindowController.stashedWidth : CardWindowController.cardWidth,
+            height: expanded && !stashed ? CardWindowController.expandedHeight : CardWindowController.collapsedHeight
         )
         let view = QuotaCardView(frame: NSRect(origin: .zero, size: size))
         view.snapshot = .demo(remainingPercent: remainingPercent)
         view.isExpanded = expanded
+        view.stashedEdge = stashedEdge
+        view.isStashed = stashed
         view.layoutSubtreeIfNeeded()
 
         let scale = 2

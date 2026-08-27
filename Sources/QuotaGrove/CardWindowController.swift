@@ -4,7 +4,7 @@ final class CardWindowController: NSWindowController, QuotaCardViewDelegate {
     static let cardWidth: CGFloat = 200
     static let collapsedHeight: CGFloat = 80
     static let expandedHeight: CGFloat = 178
-    static let stashedWidth: CGFloat = 8
+    static let stashedWidth: CGFloat = 24
     static let safeInset: CGFloat = 20
 
     var onRefresh: (() -> Void)?
@@ -13,16 +13,11 @@ final class CardWindowController: NSWindowController, QuotaCardViewDelegate {
     private let cardView: QuotaCardView
     private let defaults: UserDefaults
     private var isExpanded: Bool
-    private var edgeSide: EdgeSide?
+    private var edgeSide: StashedEdge?
     private var fullFrame: NSRect
     private var isDragging = false
     private var pendingRestash: DispatchWorkItem?
     private var screenObserver: NSObjectProtocol?
-
-    private enum EdgeSide: String {
-        case left
-        case right
-    }
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -39,7 +34,7 @@ final class CardWindowController: NSWindowController, QuotaCardViewDelegate {
         cardView.delegate = self
         cardView.isExpanded = isExpanded
 
-        if let rawSide = defaults.string(forKey: "QuotaGrove.edgeSide"), let side = EdgeSide(rawValue: rawSide) {
+        if let rawSide = defaults.string(forKey: "QuotaGrove.edgeSide"), let side = StashedEdge(rawValue: rawSide) {
             edgeSide = side
             stash(to: side, animated: false, preserveFullFrame: true)
         }
@@ -217,7 +212,7 @@ final class CardWindowController: NSWindowController, QuotaCardViewDelegate {
         saveFullFrame()
     }
 
-    private func stash(to side: EdgeSide, animated: Bool, preserveFullFrame: Bool = false) {
+    private func stash(to side: StashedEdge, animated: Bool, preserveFullFrame: Bool = false) {
         pendingRestash?.cancel()
         if !preserveFullFrame && !cardView.isStashed { fullFrame = panel.frame }
         guard let screen = Self.screen(containing: fullFrame) ?? NSScreen.main else { return }
@@ -228,11 +223,12 @@ final class CardWindowController: NSWindowController, QuotaCardViewDelegate {
 
         edgeSide = side
         defaults.set(side.rawValue, forKey: "QuotaGrove.edgeSide")
+        cardView.stashedEdge = side
         cardView.isStashed = true
         animated ? animateFrame(to: target) : panel.setFrame(target, display: true)
     }
 
-    private func reveal(from side: EdgeSide) {
+    private func reveal(from side: StashedEdge) {
         guard let screen = Self.screen(containing: panel.frame) ?? NSScreen.main else { return }
         let visible = screen.visibleFrame
         let height = isExpanded ? Self.expandedHeight : Self.collapsedHeight

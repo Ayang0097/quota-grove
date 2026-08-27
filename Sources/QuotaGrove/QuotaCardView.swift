@@ -1,5 +1,10 @@
 import AppKit
 
+enum StashedEdge: String {
+    case left
+    case right
+}
+
 protocol QuotaCardViewDelegate: AnyObject {
     func cardViewDidSingleClick(_ view: QuotaCardView)
     func cardViewDidDoubleClick(_ view: QuotaCardView)
@@ -35,6 +40,12 @@ final class QuotaCardView: NSView {
             guard oldValue != isStashed else { return }
             updateTrackingAreas()
             updateAccessibility()
+            needsDisplay = true
+        }
+    }
+    var stashedEdge: StashedEdge = .right {
+        didSet {
+            guard oldValue != stashedEdge else { return }
             needsDisplay = true
         }
     }
@@ -133,20 +144,70 @@ final class QuotaCardView: NSView {
     }
 
     private func drawStashedBar() {
-        let outer = bounds.insetBy(dx: 1, dy: 1)
-        let track = NSBezierPath(roundedRect: outer, xRadius: 4, yRadius: 4)
-        NSColor(calibratedWhite: 0.07, alpha: 0.92).setFill()
+        // Extend the rounded card beyond the screen edge, leaving a single
+        // curved slice visible instead of an isolated progress capsule.
+        let hiddenExtension: CGFloat = 18
+        let shellRect: NSRect
+        switch stashedEdge {
+        case .right:
+            shellRect = NSRect(
+                x: 0.5,
+                y: 0.5,
+                width: bounds.width + hiddenExtension,
+                height: bounds.height - 1
+            )
+        case .left:
+            shellRect = NSRect(
+                x: -hiddenExtension + 0.5,
+                y: 0.5,
+                width: bounds.width + hiddenExtension,
+                height: bounds.height - 1
+            )
+        }
+
+        let shell = NSBezierPath(roundedRect: shellRect, xRadius: 18, yRadius: 18)
+        NSGraphicsContext.saveGraphicsState()
+        shell.addClip()
+        drawEnvironment(in: shellRect)
+        NSColor(calibratedWhite: 0, alpha: 0.28).setFill()
+        shell.fill()
+        NSGraphicsContext.restoreGraphicsState()
+
+        NSColor(calibratedRed: 0.48, green: 0.79, blue: 0.62, alpha: 0.82).setStroke()
+        shell.lineWidth = 1
+        shell.stroke()
+
+        let trackRect = NSRect(
+            x: (bounds.width - 6) / 2,
+            y: 11,
+            width: 6,
+            height: bounds.height - 22
+        )
+        let track = NSBezierPath(roundedRect: trackRect, xRadius: 3, yRadius: 3)
+        NSColor(calibratedWhite: 0.025, alpha: 0.62).setFill()
         track.fill()
 
         let remaining = CGFloat(snapshot?.remainingPercent ?? 0) / 100
-        let fillHeight = max(snapshot == nil ? 0 : 3, outer.height * remaining)
-        let fillRect = NSRect(x: outer.minX, y: outer.minY, width: outer.width, height: fillHeight)
-        let clippedFill = NSBezierPath(roundedRect: fillRect, xRadius: 4, yRadius: 4)
-        (snapshot.map { QuotaTheme.select(for: $0.remainingPercent).accent } ?? .white).setFill()
-        clippedFill.fill()
+        let fillHeight = max(snapshot == nil ? 0 : 4, trackRect.height * remaining)
+        guard fillHeight > 0 else { return }
+        let fillRect = NSRect(
+            x: trackRect.minX,
+            y: trackRect.minY,
+            width: trackRect.width,
+            height: fillHeight
+        )
+        let fill = NSBezierPath(roundedRect: fillRect, xRadius: 3, yRadius: 3)
+        NSGraphicsContext.saveGraphicsState()
+        fill.addClip()
+        let accent = snapshot.map { QuotaTheme.select(for: $0.remainingPercent).accent } ?? .white
+        NSGradient(
+            starting: accent,
+            ending: accent.blended(withFraction: 0.2, of: .white) ?? accent
+        )?.draw(in: fillRect, angle: 90)
+        NSGraphicsContext.restoreGraphicsState()
 
-        NSColor(calibratedWhite: 1, alpha: 0.32).setStroke()
-        track.lineWidth = 1
+        NSColor.white.withAlphaComponent(0.12).setStroke()
+        track.lineWidth = 0.7
         track.stroke()
     }
 
@@ -480,7 +541,8 @@ final class QuotaCardView: NSView {
         let percent = snapshot.map { "剩余 \($0.roundedRemaining)%" } ?? "等待额度数据"
         let state = snapshot.map { QuotaTheme.select(for: $0.remainingPercent).accessibilityName } ?? "暂无数据"
         let stale = isStale ? "，数据可能已过期" : ""
-        setAccessibilityLabel("\(title)，\(percent)，\(state)\(stale)。单击\(isExpanded ? "收起" : "展开")，双击刷新。")
+        let mode = isStashed ? "已收纳，悬停显示完整卡片" : "单击\(isExpanded ? "收起" : "展开")，双击刷新"
+        setAccessibilityLabel("\(title)，\(percent)，\(state)\(stale)。\(mode)。")
         setAccessibilityValue(snapshot?.remainingPercent as NSNumber?)
         setAccessibilityHelp("可拖动卡片；拖到屏幕左侧或右侧可收纳。右键打开菜单。")
     }
