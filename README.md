@@ -4,11 +4,19 @@ Quota Grove 是一个原生 macOS 桌面悬浮卡片，用环境变化显示本�
 
 卡片标题旁的 Codex 图标仅用于标明额度数据来自用户本机的 Codex/ChatGPT 桌面客户端；它不是 Quota Grove 的应用图标、仓库标志或产品品牌。
 
-![Quota Grove 展开状态](docs/screenshots/quota-grove-expanded.png)
+## 效果展示
 
-收纳后保留一段带主题背景的卡片边缘，内嵌当前额度条：
+### 不同额度主题
 
-![Quota Grove 收纳状态](docs/screenshots/quota-grove-stashed.png)
+卡片会根据 7 天剩余额度切换环境，背景、边框颜色和进度条保持一致：`50–100%` 为森林、`20–49%` 为秋天、`3–19%` 为末日、`0–2%` 为废土。
+
+![Quota Grove 不同额度主题效果](docs/screenshots/quota-grove-themes.png)
+
+### 收起、展开与贴边隐藏
+
+收起状态保留核心额度信息；单击卡片展开订阅计划和数据更新时间；拖到屏幕左右边缘后自动收纳成 16 pt 的深色主题切片，悬停时完整卡片会临时滑出。
+
+![Quota Grove 收起、展开与贴边隐藏效果](docs/screenshots/quota-grove-modes.png)
 
 ## 特点
 

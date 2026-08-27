@@ -1,0 +1,297 @@
+#!/usr/bin/env swift
+
+import AppKit
+import Foundation
+
+private struct ThemeSample {
+    let percent: Int
+    let title: String
+    let range: String
+    let accent: NSColor
+    let image: NSImage
+}
+
+private let fileManager = FileManager.default
+private let repositoryRoot = URL(fileURLWithPath: fileManager.currentDirectoryPath, isDirectory: true)
+private let binaryURL = CommandLine.arguments.dropFirst().first.map(URL.init(fileURLWithPath:))
+    ?? repositoryRoot.appendingPathComponent(".build/release/QuotaGrove")
+private let outputDirectory = repositoryRoot.appendingPathComponent("docs/screenshots", isDirectory: true)
+private let temporaryDirectory = fileManager.temporaryDirectory
+    .appendingPathComponent("quota-grove-showcase-\(ProcessInfo.processInfo.processIdentifier)", isDirectory: true)
+
+private let palette = (
+    canvasTop: NSColor(calibratedRed: 0.025, green: 0.071, blue: 0.058, alpha: 1),
+    canvasBottom: NSColor(calibratedRed: 0.043, green: 0.105, blue: 0.086, alpha: 1),
+    panel: NSColor(calibratedRed: 0.060, green: 0.128, blue: 0.105, alpha: 0.88),
+    panelStroke: NSColor(calibratedRed: 0.206, green: 0.342, blue: 0.290, alpha: 0.72),
+    text: NSColor(calibratedWhite: 0.95, alpha: 1),
+    muted: NSColor(calibratedRed: 0.64, green: 0.73, blue: 0.69, alpha: 1),
+    desktopTop: NSColor(calibratedRed: 0.82, green: 0.82, blue: 0.79, alpha: 1),
+    desktopBottom: NSColor(calibratedRed: 0.66, green: 0.65, blue: 0.61, alpha: 1)
+)
+
+private func runPreview(percent: Int, name: String, expanded: Bool = false, stashed: Bool = false) throws -> NSImage {
+    let outputURL = temporaryDirectory.appendingPathComponent("\(name).png")
+    let process = Process()
+    process.executableURL = binaryURL
+    process.arguments = ["--render-preview", String(percent), outputURL.path]
+        + (expanded ? ["--expanded"] : [])
+        + (stashed ? ["--stashed"] : [])
+    process.standardOutput = FileHandle.nullDevice
+    process.standardError = FileHandle.standardError
+    try process.run()
+    process.waitUntilExit()
+    guard process.terminationStatus == 0, let image = NSImage(contentsOf: outputURL) else {
+        throw NSError(
+            domain: "QuotaGroveShowcase",
+            code: Int(process.terminationStatus),
+            userInfo: [NSLocalizedDescriptionKey: "无法生成预览：\(name)"]
+        )
+    }
+    return image
+}
+
+private func roundedRect(_ rect: NSRect, radius: CGFloat, fill: NSColor, stroke: NSColor? = nil) {
+    let path = NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius)
+    fill.setFill()
+    path.fill()
+    if let stroke {
+        stroke.setStroke()
+        path.lineWidth = 1
+        path.stroke()
+    }
+}
+
+private func drawText(
+    _ text: String,
+    in rect: NSRect,
+    font: NSFont,
+    color: NSColor,
+    alignment: NSTextAlignment = .left
+) {
+    let paragraph = NSMutableParagraphStyle()
+    paragraph.alignment = alignment
+    paragraph.lineBreakMode = .byTruncatingTail
+    (text as NSString).draw(
+        in: rect,
+        withAttributes: [
+            .font: font,
+            .foregroundColor: color,
+            .paragraphStyle: paragraph
+        ]
+    )
+}
+
+private func drawCanvas(size: NSSize, body: @escaping (NSRect) -> Void) -> NSImage {
+    NSImage(size: size, flipped: true) { bounds in
+        NSGradient(starting: palette.canvasTop, ending: palette.canvasBottom)?
+            .draw(in: bounds, angle: -90)
+        body(bounds)
+        return true
+    }
+}
+
+private func drawImage(_ image: NSImage, in rect: NSRect, shadow: Bool = true) {
+    NSGraphicsContext.saveGraphicsState()
+    if shadow {
+        let cardShadow = NSShadow()
+        cardShadow.shadowColor = NSColor.black.withAlphaComponent(0.42)
+        cardShadow.shadowBlurRadius = 18
+        cardShadow.shadowOffset = NSSize(width: 0, height: 8)
+        cardShadow.set()
+    }
+    image.draw(
+        in: rect,
+        from: NSRect(origin: .zero, size: image.size),
+        operation: .sourceOver,
+        fraction: 1,
+        respectFlipped: true,
+        hints: [.interpolation: NSImageInterpolation.high]
+    )
+    NSGraphicsContext.restoreGraphicsState()
+}
+
+private func writePNG(_ image: NSImage, to url: URL) throws {
+    guard
+        let tiff = image.tiffRepresentation,
+        let bitmap = NSBitmapImageRep(data: tiff),
+        let png = bitmap.representation(using: .png, properties: [.compressionFactor: 0.92])
+    else {
+        throw NSError(
+            domain: "QuotaGroveShowcase",
+            code: 2,
+            userInfo: [NSLocalizedDescriptionKey: "无法编码 PNG：\(url.lastPathComponent)"]
+        )
+    }
+    try png.write(to: url, options: .atomic)
+}
+
+private func drawHeader(title: String, subtitle: String, width: CGFloat) {
+    drawText(
+        title,
+        in: NSRect(x: 64, y: 42, width: width - 128, height: 52),
+        font: .systemFont(ofSize: 38, weight: .semibold),
+        color: palette.text
+    )
+    drawText(
+        subtitle,
+        in: NSRect(x: 64, y: 98, width: width - 128, height: 34),
+        font: .systemFont(ofSize: 20, weight: .regular),
+        color: palette.muted
+    )
+}
+
+private func renderThemeShowcase(samples: [ThemeSample]) -> NSImage {
+    let size = NSSize(width: 1600, height: 520)
+    return drawCanvas(size: size) { _ in
+        drawHeader(
+            title: "额度变化，卡片环境也随之变化",
+            subtitle: "背景、边框和进度条会按 7 天剩余额度同步切换",
+            width: size.width
+        )
+
+        let panelWidth: CGFloat = 350
+        let gap: CGFloat = 26
+        let startX: CGFloat = 61
+
+        for (index, sample) in samples.enumerated() {
+            let x = startX + CGFloat(index) * (panelWidth + gap)
+            let panelRect = NSRect(x: x, y: 164, width: panelWidth, height: 294)
+            roundedRect(panelRect, radius: 24, fill: palette.panel, stroke: palette.panelStroke)
+
+            let dotRect = NSRect(x: x + 24, y: 193, width: 12, height: 12)
+            NSBezierPath(ovalIn: dotRect).apply {
+                sample.accent.setFill()
+                $0.fill()
+            }
+            drawText(
+                sample.title,
+                in: NSRect(x: x + 48, y: 182, width: 170, height: 34),
+                font: .systemFont(ofSize: 22, weight: .medium),
+                color: palette.text
+            )
+            drawText(
+                sample.range,
+                in: NSRect(x: x + 206, y: 184, width: 118, height: 30),
+                font: .monospacedDigitSystemFont(ofSize: 16, weight: .medium),
+                color: palette.muted,
+                alignment: .right
+            )
+
+            drawImage(sample.image, in: NSRect(x: x + 15, y: 244, width: 320, height: 128))
+            drawText(
+                "示例剩余 \(sample.percent)%",
+                in: NSRect(x: x + 24, y: 400, width: panelWidth - 48, height: 30),
+                font: .monospacedDigitSystemFont(ofSize: 16, weight: .regular),
+                color: palette.muted,
+                alignment: .center
+            )
+        }
+    }
+}
+
+private func renderModeShowcase(collapsed: NSImage, expanded: NSImage, stashed: NSImage) -> NSImage {
+    let size = NSSize(width: 1600, height: 760)
+    return drawCanvas(size: size) { _ in
+        drawHeader(
+            title: "三种展示形态",
+            subtitle: "收起查看核心信息，单击展开详情，拖到屏幕边缘自动隐藏",
+            width: size.width
+        )
+
+        let panels = [
+            NSRect(x: 50, y: 164, width: 480, height: 520),
+            NSRect(x: 560, y: 164, width: 480, height: 520),
+            NSRect(x: 1070, y: 164, width: 480, height: 520)
+        ]
+        let titles = ["收起", "展开", "贴边隐藏"]
+        let captions = ["保留额度、重置时间和进度", "查看订阅计划与数据更新时间", "悬停时完整卡片会临时滑出"]
+
+        for index in panels.indices {
+            roundedRect(panels[index], radius: 28, fill: palette.panel, stroke: palette.panelStroke)
+            drawText(
+                titles[index],
+                in: NSRect(x: panels[index].minX + 30, y: 195, width: 180, height: 40),
+                font: .systemFont(ofSize: 25, weight: .medium),
+                color: palette.text
+            )
+            drawText(
+                captions[index],
+                in: NSRect(x: panels[index].minX + 30, y: 625, width: panels[index].width - 60, height: 34),
+                font: .systemFont(ofSize: 17, weight: .regular),
+                color: palette.muted,
+                alignment: .center
+            )
+        }
+
+        drawImage(collapsed, in: NSRect(x: 90, y: 354, width: 400, height: 160))
+        drawImage(expanded, in: NSRect(x: 600, y: 255, width: 400, height: 356))
+
+        let desktopRect = NSRect(x: 1110, y: 254, width: 400, height: 356)
+        let desktopPath = NSBezierPath(roundedRect: desktopRect, xRadius: 22, yRadius: 22)
+        NSGraphicsContext.saveGraphicsState()
+        desktopPath.addClip()
+        NSGradient(starting: palette.desktopTop, ending: palette.desktopBottom)?
+            .draw(in: desktopRect, angle: -75)
+        let edgeShade = NSRect(x: desktopRect.maxX - 48, y: desktopRect.minY, width: 48, height: desktopRect.height)
+        NSColor.black.withAlphaComponent(0.12).setFill()
+        edgeShade.fill()
+        NSGraphicsContext.restoreGraphicsState()
+        palette.panelStroke.setStroke()
+        desktopPath.lineWidth = 1
+        desktopPath.stroke()
+
+        drawImage(
+            stashed,
+            in: NSRect(x: desktopRect.maxX - 32, y: desktopRect.midY - 80, width: 32, height: 160),
+            shadow: true
+        )
+        drawText(
+            "屏幕边缘",
+            in: NSRect(x: desktopRect.maxX - 145, y: desktopRect.minY + 24, width: 110, height: 26),
+            font: .systemFont(ofSize: 15, weight: .medium),
+            color: NSColor(calibratedWhite: 0.22, alpha: 0.76),
+            alignment: .right
+        )
+    }
+}
+
+private extension NSBezierPath {
+    func apply(_ body: (NSBezierPath) -> Void) {
+        body(self)
+    }
+}
+
+do {
+    guard fileManager.isExecutableFile(atPath: binaryURL.path) else {
+        throw NSError(
+            domain: "QuotaGroveShowcase",
+            code: 1,
+            userInfo: [NSLocalizedDescriptionKey: "请先执行 swift build -c release"]
+        )
+    }
+    try fileManager.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
+    try fileManager.createDirectory(at: outputDirectory, withIntermediateDirectories: true)
+    defer { try? fileManager.removeItem(at: temporaryDirectory) }
+
+    let samples = try [
+        ThemeSample(percent: 82, title: "额度充足", range: "50–100%", accent: NSColor(calibratedRed: 0.47, green: 0.88, blue: 0.67, alpha: 1), image: runPreview(percent: 82, name: "forest")),
+        ThemeSample(percent: 38, title: "额度偏低", range: "20–49%", accent: NSColor(calibratedRed: 0.96, green: 0.72, blue: 0.29, alpha: 1), image: runPreview(percent: 38, name: "autumn")),
+        ThemeSample(percent: 12, title: "额度紧张", range: "3–19%", accent: NSColor(calibratedRed: 0.94, green: 0.29, blue: 0.28, alpha: 1), image: runPreview(percent: 12, name: "apocalypse")),
+        ThemeSample(percent: 1, title: "即将耗尽", range: "0–2%", accent: NSColor(calibratedRed: 0.78, green: 0.29, blue: 0.28, alpha: 1), image: runPreview(percent: 1, name: "wasteland"))
+    ]
+    let collapsed = try runPreview(percent: 54, name: "collapsed")
+    let expanded = try runPreview(percent: 54, name: "expanded", expanded: true)
+    let stashed = try runPreview(percent: 54, name: "stashed", stashed: true)
+
+    let themeURL = outputDirectory.appendingPathComponent("quota-grove-themes.png")
+    let modeURL = outputDirectory.appendingPathComponent("quota-grove-modes.png")
+    try writePNG(renderThemeShowcase(samples: samples), to: themeURL)
+    try writePNG(renderModeShowcase(collapsed: collapsed, expanded: expanded, stashed: stashed), to: modeURL)
+
+    print(themeURL.path)
+    print(modeURL.path)
+} catch {
+    FileHandle.standardError.write(Data("生成 README 展示图失败：\(error.localizedDescription)\n".utf8))
+    exit(1)
+}
