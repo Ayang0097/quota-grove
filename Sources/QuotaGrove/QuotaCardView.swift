@@ -183,7 +183,7 @@ final class QuotaCardView: NSView {
         shell.fill()
         NSGraphicsContext.restoreGraphicsState()
 
-        NSColor(calibratedRed: 0.48, green: 0.79, blue: 0.62, alpha: 0.82).setStroke()
+        currentBorderColor.setStroke()
         shell.lineWidth = 1
         shell.stroke()
 
@@ -231,7 +231,7 @@ final class QuotaCardView: NSView {
         drawReadabilityOverlay(in: bounds)
         NSGraphicsContext.restoreGraphicsState()
 
-        NSColor(calibratedRed: 0.48, green: 0.79, blue: 0.62, alpha: 0.8).setStroke()
+        currentBorderColor.setStroke()
         clip.lineWidth = 1
         clip.stroke()
 
@@ -241,6 +241,12 @@ final class QuotaCardView: NSView {
 
     private var currentTheme: QuotaTheme {
         snapshot.map { QuotaTheme.select(for: $0.remainingPercent) } ?? .forest
+    }
+
+    private var currentBorderColor: NSColor {
+        let accent = currentTheme.accent
+        return (accent.blended(withFraction: 0.12, of: .black) ?? accent)
+            .withAlphaComponent(0.82)
     }
 
     private func drawEnvironment(in rect: NSRect) {
