@@ -429,7 +429,7 @@ final class QuotaCardView: NSView {
         drawCodexIcon(at: NSPoint(x: markX, y: top - 29.5), size: 15)
 
         let percent = snapshot.map { "\($0.roundedRemaining)%" } ?? "--%"
-        let percentFont = NSFont.monospacedDigitSystemFont(ofSize: 24, weight: .medium)
+        let percentFont = NSFont.monospacedDigitSystemFont(ofSize: 23, weight: .bold)
         let percentWidth = (percent as NSString).size(withAttributes: [.font: percentFont]).width
         let staleBadgeX = markX + 19
         if isStale, staleBadgeX + 24 <= contentRight - percentWidth - 5 {
