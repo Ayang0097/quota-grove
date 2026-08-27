@@ -135,7 +135,7 @@ internal sealed class MainWindow : Window
         Canvas.SetTop(_percentText, 21);
         _summary.Children.Add(_percentText);
 
-        _remainingText = Text(AppText.Remaining, 19, FontWeights.Medium, Color.FromArgb(158, 255, 255, 255));
+        _remainingText = Text(AppText.Remaining, AppText.CurrentLanguage == AppLanguage.English ? 16 : 19, FontWeights.Medium, Color.FromArgb(158, 255, 255, 255));
         _remainingText.TextAlignment = TextAlignment.Right;
         _remainingText.Width = 90;
         Canvas.SetLeft(_remainingText, 280);
