@@ -404,7 +404,7 @@ final class QuotaCardView: NSView {
         let leftInset: CGFloat = 15
         let contentRight: CGFloat = 185
         let title = snapshot?.windowTitle ?? "7 天额度"
-        let titleFont = NSFont.systemFont(ofSize: 15, weight: .semibold)
+        let titleFont = NSFont.systemFont(ofSize: 15, weight: .regular)
         let titleColor = NSColor.white.withAlphaComponent(0.96)
         drawText(title, at: NSPoint(x: leftInset, y: top - 31), font: titleFont, color: titleColor)
 
@@ -413,7 +413,7 @@ final class QuotaCardView: NSView {
         drawMark(at: NSPoint(x: markX, y: top - 29), size: 14)
 
         let percent = snapshot.map { "\($0.roundedRemaining)%" } ?? "--%"
-        let percentFont = NSFont.monospacedDigitSystemFont(ofSize: 25, weight: .bold)
+        let percentFont = NSFont.monospacedDigitSystemFont(ofSize: 25, weight: .regular)
         let percentWidth = (percent as NSString).size(withAttributes: [.font: percentFont]).width
         let staleBadgeX = markX + 19
         if isStale, staleBadgeX + 24 <= contentRight - percentWidth - 5 {
@@ -513,7 +513,7 @@ final class QuotaCardView: NSView {
         drawText(
             "陈旧",
             at: NSPoint(x: rect.minX + 3.5, y: rect.minY + 1),
-            font: .systemFont(ofSize: 8.5, weight: .semibold),
+            font: .systemFont(ofSize: 8.5, weight: .medium),
             color: amber.withAlphaComponent(0.9)
         )
     }
