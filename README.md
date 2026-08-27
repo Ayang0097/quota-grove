@@ -24,6 +24,14 @@ macOS 卡片会在额度下降时播放落叶，并在卡片可见且系统未�
 
 ![Quota Grove compact, expanded, and edge-stashed states](docs/screenshots/quota-grove-modes-en-v101.png)
 
+### Windows 紧凑高 DPI 布局
+
+Windows 版按 macOS 卡片的物理观感重新换算为紧凑尺寸，系统缩放只提升渲染清晰度，不再把卡片设计尺寸重复放大。
+
+![Quota Grove Windows compact layout](docs/screenshots/quota-grove-windows-compact-v122.png)
+
+![Quota Grove Windows expanded layout](docs/screenshots/quota-grove-windows-expanded-v122.png)
+
 ## 特点
 
 - macOS 为 `200 × 80 pt` 收起、`200 × 178 pt` 展开；Windows 为 `268 × 107 DIP` 收起、`268 × 238 DIP` 展开，按单位换算匹配 macOS 的物理观感，并由 WPF 适配高 DPI 缩放。
