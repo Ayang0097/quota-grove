@@ -16,6 +16,8 @@ fi
 mkdir -p "$app_dir/Contents/MacOS" "$app_dir/Contents/Resources"
 cp "$project_root/.build/release/QuotaGrove" "$app_dir/Contents/MacOS/QuotaGrove"
 cp "$project_root/Support/Info.plist" "$app_dir/Contents/Info.plist"
+mkdir -p "$app_dir/Contents/Resources/Backgrounds"
+cp "$project_root"/bg/*.png "$app_dir/Contents/Resources/Backgrounds/"
 
 rm -rf "$iconset_dir"
 mkdir -p "$iconset_dir"

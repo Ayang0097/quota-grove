@@ -5,7 +5,8 @@ final class LocalRateLimitSource {
     private let fileManager: FileManager
     private var candidates: [URL] = []
     private var lastDiscovery = Date.distantPast
-    private let tailLimit = 2 * 1_024 * 1_024
+    private var candidateDirectoryModificationDate: Date?
+    private let tailLimit = 256 * 1_024
 
     init(
         root: URL = FileManager.default.homeDirectoryForCurrentUser
@@ -17,21 +18,34 @@ final class LocalRateLimitSource {
     }
 
     func latestSnapshot(now: Date = Date()) -> QuotaSnapshot? {
-        if candidates.isEmpty || now.timeIntervalSince(lastDiscovery) >= 60 {
+        if shouldRediscover(now: now) {
             candidates = discoverCandidates()
             lastDiscovery = now
+            candidateDirectoryModificationDate = currentCandidateDirectoryModificationDate()
         } else {
             candidates = sortByModificationDate(candidates)
         }
 
-        var newest: QuotaSnapshot?
         for url in candidates.prefix(32) {
-            guard let snapshot = snapshotFromTail(of: url) else { continue }
-            if newest == nil || snapshot.fetchedAt > newest!.fetchedAt {
-                newest = snapshot
-            }
+            if let snapshot = snapshotFromTail(of: url) { return snapshot }
         }
-        return newest
+        return nil
+    }
+
+    private func shouldRediscover(now: Date) -> Bool {
+        if candidates.isEmpty || now.timeIntervalSince(lastDiscovery) >= 300 { return true }
+        guard
+            let previous = candidateDirectoryModificationDate,
+            let current = currentCandidateDirectoryModificationDate()
+        else {
+            return false
+        }
+        return current > previous
+    }
+
+    private func currentCandidateDirectoryModificationDate() -> Date? {
+        guard let directory = candidates.first?.deletingLastPathComponent() else { return nil }
+        return try? directory.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
     }
 
     private func discoverCandidates() -> [URL] {

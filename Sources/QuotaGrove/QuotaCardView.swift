@@ -173,12 +173,43 @@ final class QuotaCardView: NSView {
     }
 
     private func drawEnvironment(in rect: NSRect) {
+        if let image = ThemeBackgroundStore.shared.image(for: currentTheme) {
+            drawBackgroundImage(image, in: rect)
+            return
+        }
         switch currentTheme {
         case .forest: drawForest(in: rect)
         case .autumn: drawAutumn(in: rect)
         case .apocalypse: drawApocalypse(in: rect)
         case .wasteland: drawWasteland(in: rect)
         }
+    }
+
+    private func drawBackgroundImage(_ image: NSImage, in rect: NSRect) {
+        let sourceSize = image.size
+        guard sourceSize.width > 0, sourceSize.height > 0 else { return }
+        let targetAspect = rect.width / rect.height
+        let sourceAspect = sourceSize.width / sourceSize.height
+        var sourceRect = NSRect(origin: .zero, size: sourceSize)
+
+        if sourceAspect > targetAspect {
+            sourceRect.size.width = sourceSize.height * targetAspect
+            sourceRect.origin.x = isExpanded
+                ? max(0, sourceSize.width - sourceRect.width)
+                : (sourceSize.width - sourceRect.width) / 2
+        } else if sourceAspect < targetAspect {
+            sourceRect.size.height = sourceSize.width / targetAspect
+            sourceRect.origin.y = (sourceSize.height - sourceRect.height) / 2
+        }
+
+        image.draw(
+            in: rect,
+            from: sourceRect,
+            operation: .sourceOver,
+            fraction: 1,
+            respectFlipped: false,
+            hints: [.interpolation: NSImageInterpolation.high]
+        )
     }
 
     private func drawForest(in rect: NSRect) {

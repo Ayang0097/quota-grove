@@ -66,7 +66,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         refreshInProgress = true
         sourceQueue.async { [weak self] in
             guard let self else { return }
-            let snapshot = self.source.latestSnapshot()
+            let snapshot = autoreleasepool { self.source.latestSnapshot() }
             DispatchQueue.main.async {
                 self.refreshInProgress = false
                 if let snapshot {

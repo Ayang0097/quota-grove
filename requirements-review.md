@@ -15,7 +15,7 @@
 - 百分比：`remaining = 100 - used_percent`，异常值拒绝，不进入界面。
 - 刷新：20 秒轮询；双击立即重新扫描。没有公开刷新接口，因此双击不向 OpenAI 发请求。
 - Codex 状态：通过 macOS 运行应用列表判断 ChatGPT/Codex 客户端是否在运行；未运行时隐藏。
-- 主题：背景由 Core Graphics 原生绘制，四套视觉不含第三方素材。
+- 主题：正式背景使用产品负责人提供的四张 2.5:1 图片；Core Graphics 原生场景作为缺图回退。
 - 自动启动：使用用户级 LaunchAgent，不要求管理员权限。
 - 发布：安装到 `~/Applications/Quota Grove.app`，默认不自动启用登录启动。
 
