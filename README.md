@@ -2,6 +2,8 @@
 
 Quota Grove 是一个原生 macOS 桌面悬浮卡片，用环境变化显示本机 Codex 的 7 天剩余额度和重置时间。
 
+卡片标题旁的 Codex 图标仅用于标明额度数据来自用户本机的 Codex/ChatGPT 桌面客户端；它不是 Quota Grove 的应用图标、仓库标志或产品品牌。
+
 ![Quota Grove 展开状态](docs/screenshots/quota-grove-expanded.png)
 
 收纳后保留一段带主题背景的卡片边缘，内嵌当前额度条：
@@ -84,6 +86,12 @@ OpenAI 目前没有为个人订阅公开稳定的“剩余百分比”API。本�
 
 ## 独立实现声明
 
-本项目依据 `Quota-Grove-PRD.md` 从空目录独立实现，没有读取、复制或改写同类项目的代码、脚本、README、文件结构、图标或素材。应用图标为本项目独立绘制，四张正式主题背景由产品负责人提供；程序化回退背景为本项目独立绘制。
+本项目依据 `Quota-Grove-PRD.md` 从空目录独立实现，没有读取、复制或改写同类项目的代码、脚本、README 或文件结构。Quota Grove 应用图标为本项目独立绘制，四张正式主题背景由产品负责人提供，程序化回退背景为本项目独立绘制。
+
+`Assets/CodexIcon.png` 来自本机安装的官方 Codex/ChatGPT 桌面应用，仅作为额度来源标识使用。该图标及“OpenAI”“Codex”“ChatGPT”等名称或商标的相关权利归其各自权利人所有，不包含在本项目许可证授予的权利范围内。详见 [素材来源](asset-sources.md)、[第三方声明](THIRD_PARTY_NOTICES.md) 和 [LICENSE](LICENSE)。
 
 Quota Grove 是非官方工具，与 OpenAI 无隶属或背书关系。
+
+## 许可证
+
+本仓库代码、文档和自有视觉资产采用 [LICENSE](LICENSE) 中的保留权利许可。`Assets/CodexIcon.png` 属于明确排除的第三方品牌资产，不因收录在本仓库中而获得再许可。

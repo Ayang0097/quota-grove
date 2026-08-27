@@ -3,3 +3,13 @@ Copyright (c) 2026 Ayang. All rights reserved.
 The source code, visual assets, and documentation in this repository may not be
 copied, modified, distributed, or used to create derivative works without prior
 written permission from the copyright holder.
+
+Third-party asset exception
+
+This license does not apply to Assets/CodexIcon.png. That file is an OpenAI
+Codex product identifier sourced from the official Codex/ChatGPT desktop
+application and is included solely to identify the compatible local quota data
+source. All rights in that asset and in the OpenAI, Codex, and ChatGPT names and
+marks remain with their respective rights holders. No ownership, sublicense, or
+permission to use those third-party rights is granted by this repository, and
+their inclusion does not imply affiliation with or endorsement by OpenAI.
