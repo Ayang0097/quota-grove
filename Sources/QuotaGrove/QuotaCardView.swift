@@ -29,6 +29,8 @@ final class QuotaCardView: NSView {
                 if percentageDrop > 0 { emitFallingLeaves(forPercentageDrop: percentageDrop) }
             }
             updateAccessibility()
+            updateRainAnimationState()
+            updateSnowAnimationState()
             needsDisplay = true
         }
     }
@@ -44,6 +46,8 @@ final class QuotaCardView: NSView {
             guard oldValue != isStashed else { return }
             updateTrackingAreas()
             updateAccessibility()
+            updateRainAnimationState()
+            updateSnowAnimationState()
             needsDisplay = true
         }
     }
@@ -60,6 +64,11 @@ final class QuotaCardView: NSView {
     private var pendingSingleClick: DispatchWorkItem?
     private var hoverTrackingArea: NSTrackingArea?
     private var leafParticles = LeafParticleSystem()
+    private let rainEffectView = RainEffectView(frame: .zero)
+    private let snowEffectView = SnowEffectView(frame: .zero)
+    private var weatherRainRequested = false
+    private var snowEffectRequested = false
+    private var cardPresentationActive = false
     private var leafAnimationTimer: Timer?
     private var ambientLeafTimer: Timer?
     private var previousLeafTick: TimeInterval = 0
@@ -78,6 +87,12 @@ final class QuotaCardView: NSView {
         super.init(frame: frameRect)
         wantsLayer = true
         layer?.contentsScale = NSScreen.main?.backingScaleFactor ?? 2
+        rainEffectView.frame = bounds
+        rainEffectView.autoresizingMask = [.width, .height]
+        addSubview(rainEffectView)
+        snowEffectView.frame = bounds
+        snowEffectView.autoresizingMask = [.width, .height]
+        addSubview(snowEffectView)
         setAccessibilityElement(true)
         setAccessibilityRole(.group)
         updateAccessibility()
@@ -178,6 +193,68 @@ final class QuotaCardView: NSView {
         needsDisplay = true
     }
 
+    func setRainPreviewActive(_ active: Bool) {
+        rainEffectView.setPreviewActive(active)
+    }
+
+    func advanceRainAnimationForPreview(by deltaTime: TimeInterval) {
+        rainEffectView.advancePreview(by: deltaTime)
+    }
+
+    func setSnowPreviewActive(_ active: Bool) {
+        snowEffectView.setPreviewActive(active)
+    }
+
+    func advanceSnowAnimationForPreview(by deltaTime: TimeInterval) {
+        snowEffectView.advancePreview(by: deltaTime)
+    }
+
+    func displayBaseForPreview(in context: NSGraphicsContext) {
+        let rainWasVisible = !rainEffectView.isHidden
+        let snowWasVisible = !snowEffectView.isHidden
+        rainEffectView.isHidden = true
+        snowEffectView.isHidden = true
+        displayIgnoringOpacity(bounds, in: context)
+        rainEffectView.isHidden = !rainWasVisible
+        snowEffectView.isHidden = !snowWasVisible
+    }
+
+    func drawVisibleEffectsForPreview() {
+        if !rainEffectView.isHidden { rainEffectView.drawForPreview() }
+        if !snowEffectView.isHidden { snowEffectView.drawForPreview() }
+    }
+
+    func setWeatherRainActive(_ active: Bool) {
+        weatherRainRequested = active
+        if active {
+            snowEffectRequested = false
+            snowEffectView.setAnimating(false)
+        }
+        updateRainAnimationState()
+    }
+
+    func setSnowEffectActive(_ active: Bool) {
+        snowEffectRequested = active
+        if active {
+            weatherRainRequested = false
+            rainEffectView.setAnimating(false)
+        }
+        updateSnowAnimationState()
+    }
+
+    func setWeatherEffect(_ effect: WeatherEffect) {
+        weatherRainRequested = effect == .rain
+        snowEffectRequested = effect == .snow
+        updateRainAnimationState()
+        updateSnowAnimationState()
+    }
+
+    func setCardPresentationActive(_ active: Bool) {
+        cardPresentationActive = active
+        updateRainAnimationState()
+        updateSnowAnimationState()
+    }
+
     func setAmbientLeafAnimationActive(_ active: Bool) {
         if !active {
             ambientLeafTimer?.invalidate()
@@ -195,6 +272,7 @@ final class QuotaCardView: NSView {
 
     private func playAmbientLeafAnimationIfPossible() {
         guard snapshot != nil else { return }
+        guard !weatherRainRequested, !snowEffectRequested else { return }
         guard window?.isVisible == true, !isStashed, leafParticles.isEmpty else { return }
         emitFallingLeaves(forPercentageDrop: 1)
     }
@@ -459,6 +537,31 @@ final class QuotaCardView: NSView {
             }
             NSGraphicsContext.restoreGraphicsState()
         }
+    }
+
+    private func updateRainAnimationState() {
+        let shouldAnimate = weatherRainRequested
+            && cardPresentationActive
+            && !isStashed
+            && snapshot != nil
+            && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+
+        guard shouldAnimate else {
+            rainEffectView.setAnimating(false)
+            return
+        }
+
+        rainEffectView.setAnimating(true)
+    }
+
+    private func updateSnowAnimationState() {
+        let shouldAnimate = snowEffectRequested
+            && cardPresentationActive
+            && !isStashed
+            && snapshot != nil
+            && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+
+        snowEffectView.setAnimating(shouldAnimate)
     }
 
     private func drawLeafSprite(_ leaf: FallingLeaf, image: NSImage) {

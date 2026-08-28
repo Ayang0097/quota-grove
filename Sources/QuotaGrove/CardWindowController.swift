@@ -8,6 +8,7 @@ final class CardWindowController: NSWindowController, QuotaCardViewDelegate {
     static let safeInset: CGFloat = 20
 
     var onRefresh: (() -> Void)?
+    var onWeatherLinkToggle: ((Bool) -> Void)?
 
     private let panel: CardPanel
     private let cardView: QuotaCardView
@@ -18,6 +19,8 @@ final class CardWindowController: NSWindowController, QuotaCardViewDelegate {
     private var isDragging = false
     private var pendingRestash: DispatchWorkItem?
     private var screenObserver: NSObjectProtocol?
+    private var weatherLinkEnabled = false
+    private var weatherLinkStatus: WeatherLinkStatus = .disabled
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -68,12 +71,31 @@ final class CardWindowController: NSWindowController, QuotaCardViewDelegate {
         cardView.refreshClock()
     }
 
+    func setWeatherRainActive(_ active: Bool) {
+        cardView.setWeatherRainActive(active)
+    }
+
+    func setSnowEffectActive(_ active: Bool) {
+        cardView.setSnowEffectActive(active)
+    }
+
+    func setWeatherEffect(_ effect: WeatherEffect) {
+        cardView.setWeatherEffect(effect)
+    }
+
+    func setWeatherLink(enabled: Bool, status: WeatherLinkStatus) {
+        weatherLinkEnabled = enabled
+        weatherLinkStatus = status
+    }
+
     func showCard() {
         panel.orderFrontRegardless()
+        cardView.setCardPresentationActive(true)
         cardView.setAmbientLeafAnimationActive(true)
     }
 
     func hideCard() {
+        cardView.setCardPresentationActive(false)
         cardView.setAmbientLeafAnimationActive(false)
         panel.orderOut(nil)
     }
@@ -147,6 +169,15 @@ final class CardWindowController: NSWindowController, QuotaCardViewDelegate {
         launchItem.target = self
         launchItem.state = LaunchAtLoginManager.shared.isEnabled ? .on : .off
 
+        let weatherItem = menu.addItem(withTitle: AppText.followLocalWeather, action: #selector(toggleWeatherLink), keyEquivalent: "")
+        weatherItem.target = self
+        weatherItem.state = weatherLinkEnabled ? .on : .off
+        if weatherLinkEnabled {
+            let statusItem = NSMenuItem(title: AppText.weatherLinkStatus(weatherLinkStatus), action: nil, keyEquivalent: "")
+            statusItem.isEnabled = false
+            menu.addItem(statusItem)
+        }
+
         menu.addItem(.separator())
         menu.addItem(withTitle: AppText.resetCardPosition, action: #selector(resetPosition), keyEquivalent: "").target = self
         menu.addItem(withTitle: AppText.aboutAndPrivacy, action: #selector(showAbout), keyEquivalent: "").target = self
@@ -165,6 +196,10 @@ final class CardWindowController: NSWindowController, QuotaCardViewDelegate {
         } catch {
             presentAlert(title: AppText.launchUpdateFailed, message: error.localizedDescription)
         }
+    }
+
+    @objc private func toggleWeatherLink() {
+        onWeatherLinkToggle?(!weatherLinkEnabled)
     }
 
     @objc private func resetPosition() {

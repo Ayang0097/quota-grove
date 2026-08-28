@@ -74,6 +74,7 @@ enum AppText {
     }
 
     static var refreshQuota: String { localized("刷新额度", "Refresh quota") }
+    static var followLocalWeather: String { localized("跟随当地天气", "Follow local weather") }
     static var launchAtLogin: String { localized("登录时启动", "Launch at login") }
     static var resetCardPosition: String { localized("重置卡片位置", "Reset card position") }
     static var aboutAndPrivacy: String { localized("关于与隐私", "About & privacy") }
@@ -83,9 +84,22 @@ enum AppText {
     static var aboutTitle: String { localized("Quota Grove · 额度森林", "Quota Grove") }
     static var aboutMessage: String {
         localized(
-            "非官方本机工具，与 OpenAI 无隶属或背书关系。\n\n工具只读取本机 Codex 运行事件中的额度字段，不读取账号凭据，不上传数据，也不包含遥测。",
-            "An unofficial local utility with no affiliation with or endorsement by OpenAI.\n\nIt only reads quota fields from local Codex runtime events. It does not read account credentials, upload data, or include telemetry."
+            "非官方本机工具，与 OpenAI 无隶属或背书关系。\n\n额度功能只读取本机 Codex 运行事件，不读取账号凭据，也不上传额度或日志。\n\n“跟随当地天气”默认关闭。主动开启后，应用会通过系统定位获取当前位置，将经纬度四舍五入到两位小数后发送给 Open-Meteo，仅用于判断当地是否正在下雨或下雪。应用不包含遥测。\n\n天气数据：Open-Meteo（CC BY 4.0）\nhttps://open-meteo.com/",
+            "An unofficial local utility with no affiliation with or endorsement by OpenAI.\n\nQuota features only read local Codex runtime events. They do not read account credentials or upload quota data or logs.\n\n“Follow local weather” is off by default. When you enable it, the app obtains your location through the operating system, rounds latitude and longitude to two decimal places, and sends that coarse location to Open-Meteo only to determine whether it is raining or snowing. The app includes no telemetry.\n\nWeather data: Open-Meteo (CC BY 4.0)\nhttps://open-meteo.com/"
         )
+    }
+
+    static func weatherLinkStatus(_ status: WeatherLinkStatus) -> String {
+        switch status {
+        case .disabled: return localized("天气联动：已关闭", "Weather link: Off")
+        case .locating: return localized("天气联动：正在获取位置…", "Weather link: Locating…")
+        case .checking: return localized("天气联动：正在查询…", "Weather link: Checking…")
+        case .dry: return localized("天气联动：当前无降水", "Weather link: No precipitation")
+        case .raining: return localized("天气联动：当前下雨", "Weather link: Raining")
+        case .snowing: return localized("天气联动：当前下雪", "Weather link: Snowing")
+        case .permissionDenied: return localized("天气联动：位置权限未开启", "Weather link: Location denied")
+        case .unavailable: return localized("天气联动：暂时无法更新", "Weather link: Temporarily unavailable")
+        }
     }
 
     static func themeAccessibilityName(_ theme: QuotaTheme) -> String {

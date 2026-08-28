@@ -82,6 +82,61 @@ enum SelfTestRunner {
 
         testLargeLogLookup(report: &report)
 
+        let coarseCoordinate = CoarseWeatherCoordinate.rounded(latitude: 31.230_416, longitude: 121.473_701)
+        expect(coarseCoordinate.latitude == 31.23 && coarseCoordinate.longitude == 121.47, "天气定位只保留两位小数", report: &report)
+        expect(WeatherConditionEvaluator.isRaining(weatherCode: 51, rain: 0, showers: 0), "毛毛雨天气码应开启雨效", report: &report)
+        expect(WeatherConditionEvaluator.isRaining(weatherCode: 80, rain: 0, showers: 0), "阵雨天气码应开启雨效", report: &report)
+        expect(WeatherConditionEvaluator.isRaining(weatherCode: 3, rain: 0.2, showers: 0), "实时雨量大于零时应开启雨效", report: &report)
+        expect(!WeatherConditionEvaluator.isRaining(weatherCode: 71, rain: 0, showers: 0), "纯降雪不得误判为下雨", report: &report)
+        expect(
+            WeatherConditionEvaluator.effect(weatherCode: 71, rain: 0, showers: 0, snowfall: 0) == .snow,
+            "降雪天气码应开启雪效",
+            report: &report
+        )
+        expect(
+            WeatherConditionEvaluator.effect(weatherCode: 61, rain: 0.2, showers: 0, snowfall: 0.1) == .snow,
+            "雨雪混合时应优先显示雪效",
+            report: &report
+        )
+        do {
+            let weatherData = Data(#"{"current":{"weather_code":63,"rain":0.4,"showers":0}}"#.utf8)
+            let observation = try WeatherClient.decode(data: weatherData)
+            expect(observation.isRaining && observation.weatherCode == 63, "Open-Meteo 当前天气响应应正确解析", report: &report)
+        } catch {
+            report.failures.append("天气响应解析：\(error.localizedDescription)")
+        }
+
+        var rain = RainParticleSystem()
+        rain.start(in: CGSize(width: 200, height: 80))
+        expect(rain.drops.count == 52, "雨效应使用 52 滴分层细雨", report: &report)
+        expect(rain.drops.allSatisfy { $0.windSpeed < 0 }, "雨滴应统一向左下方倾斜", report: &report)
+        expect(rain.drops.allSatisfy { $0.lineWidth < 0.5 }, "雨滴线宽应保持细腻", report: &report)
+        expect(
+            rain.drops.contains { $0.depth < 0.36 }
+                && rain.drops.contains { $0.depth > 0.4 && $0.depth < 0.75 }
+                && rain.drops.contains { $0.depth > 0.77 },
+            "雨效应包含远中近三层景深",
+            report: &report
+        )
+
+        var snow = SnowParticleSystem()
+        snow.start(in: CGSize(width: 200, height: 80))
+        expect(snow.flakes.count == 20, "雪效应使用 20 片树枝状分层雪花", report: &report)
+        expect(snow.flakes.allSatisfy { $0.fallSpeed > 0 }, "雪花应稳定受重力向下飘落", report: &report)
+        expect(
+            snow.flakes.contains { $0.depth < 0.36 }
+                && snow.flakes.contains { $0.depth > 0.4 && $0.depth < 0.75 }
+                && snow.flakes.contains { $0.depth > 0.77 },
+            "雪效应包含远中近三层景深",
+            report: &report
+        )
+        let farSnowSize = snow.flakes.filter { $0.depth < 0.36 }.map(\.size).max() ?? 0
+        let nearSnowSize = snow.flakes.filter { $0.depth > 0.77 }.map(\.size).min() ?? 0
+        expect(nearSnowSize > farSnowSize, "近景雪花应明显大于远景雪花", report: &report)
+        let initialSnowPositions = snow.flakes.map(\.position)
+        snow.advance(by: 1.0 / 20.0, in: CGSize(width: 200, height: 80))
+        expect(snow.flakes.map(\.position) != initialSnowPositions, "雪花应具有持续飘落运动", report: &report)
+
         var onePointDrop = LeafParticleSystem()
         onePointDrop.emit(forPercentageDrop: 1, in: CGSize(width: 200, height: 80))
         expect(onePointDrop.leaves.count == 8, "每下降 1% 应生成 8 片轻量落叶", report: &report)

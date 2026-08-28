@@ -6,6 +6,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let source = LocalRateLimitSource()
     private let sourceQueue = DispatchQueue(label: "com.ayang.quotagrove.quota-source", qos: .utility)
     private let processMonitor = CodexProcessMonitor()
+    private let weatherLinkManager = WeatherLinkManager()
     private var windowController: CardWindowController?
     private var refreshTimer: Timer?
     private var clockTimer: Timer?
@@ -20,14 +21,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         currentSnapshot = QuotaSnapshotCache.load()
         updateCard()
         controller.onRefresh = { [weak self] in self?.refreshQuota(force: true) }
+        controller.onWeatherLinkToggle = { [weak self] enabled in
+            self?.weatherLinkManager.setEnabled(enabled)
+        }
+        weatherLinkManager.onChange = { [weak controller, weak weatherLinkManager] status, effect in
+            guard let controller, let weatherLinkManager else { return }
+            controller.setWeatherLink(enabled: weatherLinkManager.isEnabled, status: status)
+            controller.setWeatherEffect(effect)
+        }
+        controller.setWeatherLink(enabled: weatherLinkManager.isEnabled, status: weatherLinkManager.status)
 
         if let demoValue = commandLineDemoValue() {
             codexIsRunning = true
             currentSnapshot = .demo(remainingPercent: demoValue)
             updateCard()
+            if CommandLine.arguments.contains("--rain") {
+                controller.setWeatherRainActive(true)
+            } else if CommandLine.arguments.contains("--snow") {
+                controller.setSnowEffectActive(true)
+            }
             controller.showCard()
             return
         }
+
+        weatherLinkManager.startIfEnabled()
 
         processMonitor.onChange = { [weak self] running in
             guard let self else { return }
@@ -56,6 +73,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         refreshTimer?.invalidate()
         clockTimer?.invalidate()
         processMonitor.stop()
+        weatherLinkManager.stop()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
