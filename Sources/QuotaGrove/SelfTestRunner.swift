@@ -109,6 +109,10 @@ enum SelfTestRunner {
         expect(manualBurst.leaves.allSatisfy { $0.windAccelerationX < 0 }, "双击落叶应受到向左衰减的阵风推力", report: &report)
         expect(manualBurst.leaves.filter { $0.focus == .crisp }.count == 12, "双击落叶应保留 12 片清晰叶片", report: &report)
         expect(manualBurst.leaves.allSatisfy { $0.verticalAcceleration >= 34 }, "双击落叶应具有自然重力加速度", report: &report)
+        var departingLeaf = manualBurst.leaves[0]
+        expect(departingLeaf.departureProgress(in: 80) == 0, "落叶进入卡片时不应提前退场", report: &report)
+        departingLeaf.position.y = 1.6
+        expect(departingLeaf.departureProgress(in: 80) > 0.99, "落叶接近底部时应完成景深退场", report: &report)
 
         return report
     }

@@ -40,6 +40,14 @@ struct FallingLeaf {
     var renderedX: CGFloat {
         position.x + sin(swayPhase) * swayAmplitude
     }
+
+    func departureProgress(in height: CGFloat) -> CGFloat {
+        guard height > 0 else { return 0 }
+        let startY = height * 0.34
+        let endY = height * 0.02
+        let linear = min(1, max(0, (startY - position.y) / max(1, startY - endY)))
+        return linear * linear * (3 - 2 * linear)
+    }
 }
 
 struct LeafParticleSystem {

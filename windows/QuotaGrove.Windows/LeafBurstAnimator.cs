@@ -49,6 +49,13 @@ internal sealed class LeafBurstAnimator : IDisposable
                 var depth = NextDouble(0.14, 0.98);
                 var size = NextDouble(12, 23) * (0.78 + depth * 0.28);
                 var focus = index % 4;
+                var baseBlurRadius = focus == 0 ? 0 : focus == 1 ? 0.8 : 1.7;
+                var blurEffect = new BlurEffect { Radius = baseBlurRadius };
+                var scaleTransform = new ScaleTransform(1, 1);
+                var rotationTransform = new RotateTransform(0);
+                var transformGroup = new TransformGroup();
+                transformGroup.Children.Add(scaleTransform);
+                transformGroup.Children.Add(rotationTransform);
                 var image = new Image
                 {
                     Source = LoadSprite(theme, _random.Next(1, 4)),
@@ -57,16 +64,18 @@ internal sealed class LeafBurstAnimator : IDisposable
                     Opacity = 0,
                     Stretch = Stretch.Uniform,
                     IsHitTestVisible = false,
-                    RenderTransformOrigin = new Point(0.5, 0.5)
+                    RenderTransformOrigin = new Point(0.5, 0.5),
+                    RenderTransform = transformGroup,
+                    Effect = blurEffect
                 };
-                if (focus != 0)
-                {
-                    image.Effect = new BlurEffect { Radius = focus == 1 ? 0.8 : 1.7 };
-                }
 
                 generated.Add(new LeafVisual
                 {
                     Image = image,
+                    ScaleTransform = scaleTransform,
+                    RotationTransform = rotationTransform,
+                    BlurEffect = blurEffect,
+                    BaseBlurRadius = baseBlurRadius,
                     X = NextDouble(width * 0.72, width * 1.16),
                     Y = -size - NextDouble(-6, height * 0.2),
                     VelocityX = -NextDouble(58, 82) * (0.84 + depth * 0.28),
@@ -89,7 +98,6 @@ internal sealed class LeafBurstAnimator : IDisposable
 
         foreach (var leaf in generated.OrderBy(leaf => leaf.Depth))
         {
-            leaf.Image.RenderTransform = new RotateTransform(leaf.Rotation);
             _layer.Children.Add(leaf.Image);
             _leaves.Add(leaf);
         }
@@ -135,8 +143,9 @@ internal sealed class LeafBurstAnimator : IDisposable
             leaf.Y += leaf.VelocityY * delta;
             leaf.SwayPhase += leaf.SwaySpeed * delta;
             leaf.Rotation += leaf.AngularVelocity * delta;
+            var departure = BottomDepartureProgress(leaf.Y, _layerHeight);
 
-            if (leaf.Age >= leaf.Lifetime || leaf.Y > _layerHeight + leaf.Image.Height * 1.5)
+            if (leaf.Age >= leaf.Lifetime || departure >= 1 || leaf.Y > _layerHeight + leaf.Image.Height * 1.5)
             {
                 _layer.Children.Remove(leaf.Image);
                 _leaves.RemoveAt(index);
@@ -145,10 +154,15 @@ internal sealed class LeafBurstAnimator : IDisposable
 
             var fadeIn = Math.Min(1, leaf.Age / 0.16);
             var fadeOut = Math.Min(1, (leaf.Lifetime - leaf.Age) / 0.5);
-            leaf.Image.Opacity = Math.Max(0, Math.Min(fadeIn, fadeOut)) * (0.56 + leaf.Depth * 0.4);
+            var departureOpacity = Math.Pow(1 - departure, 1.18);
+            leaf.Image.Opacity = Math.Max(0, Math.Min(fadeIn, fadeOut)) * (0.56 + leaf.Depth * 0.4) * departureOpacity;
+            var departureScale = 1 - departure * 0.46;
+            leaf.ScaleTransform.ScaleX = departureScale;
+            leaf.ScaleTransform.ScaleY = departureScale;
+            leaf.BlurEffect.Radius = leaf.BaseBlurRadius + departure * 2.4;
             Canvas.SetLeft(leaf.Image, leaf.X + Math.Sin(leaf.SwayPhase) * leaf.SwayAmplitude);
             Canvas.SetTop(leaf.Image, leaf.Y);
-            ((RotateTransform)leaf.Image.RenderTransform).Angle = leaf.Rotation;
+            leaf.RotationTransform.Angle = leaf.Rotation;
         }
 
         if (_leaves.Count == 0) _timer.Stop();
@@ -172,9 +186,22 @@ internal sealed class LeafBurstAnimator : IDisposable
     private double NextDouble(double minimum, double maximum) =>
         minimum + _random.NextDouble() * (maximum - minimum);
 
+    private static double BottomDepartureProgress(double y, double height)
+    {
+        if (height <= 0) return 0;
+        var startY = height * 0.66;
+        var endY = height * 0.98;
+        var linear = Math.Clamp((y - startY) / Math.Max(1, endY - startY), 0, 1);
+        return linear * linear * (3 - 2 * linear);
+    }
+
     private sealed class LeafVisual
     {
         public required Image Image { get; init; }
+        public required ScaleTransform ScaleTransform { get; init; }
+        public required RotateTransform RotationTransform { get; init; }
+        public required BlurEffect BlurEffect { get; init; }
+        public double BaseBlurRadius { get; init; }
         public double X { get; set; }
         public double Y { get; set; }
         public double VelocityX { get; set; }

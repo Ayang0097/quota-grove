@@ -324,10 +324,11 @@ final class QuotaCardView: NSView {
             .sorted { $0.depth < $1.depth }
 
         for leaf in visibleLeaves {
+            let departure = leaf.departureProgress(in: bounds.height)
             if let sprite = LeafSpriteStore.shared.image(
                 for: currentTheme,
                 variant: leaf.colorVariant,
-                softened: leaf.focus != .crisp
+                softened: leaf.focus != .crisp || departure > 0.68
             ) {
                 drawLeafSprite(leaf, image: sprite)
                 continue
@@ -338,7 +339,7 @@ final class QuotaCardView: NSView {
             transform.translateX(by: leaf.renderedX, yBy: leaf.position.y)
             transform.rotate(byDegrees: leaf.rotation)
             let flutterScale = 0.56 + abs(cos(leaf.swayPhase * 0.72)) * 0.44
-            let depthScale = 0.62 + leaf.depth * 0.68
+            let depthScale = (0.62 + leaf.depth * 0.68) * (1 - departure * 0.46)
             transform.scaleX(by: flutterScale * depthScale, yBy: depthScale)
             transform.concat()
 
@@ -347,7 +348,8 @@ final class QuotaCardView: NSView {
             let halfHeight = leaf.size * halfHeightFactors[leaf.colorVariant % halfHeightFactors.count]
             let baseX = -width * 0.4
             let tipX = width * 0.58
-            let leafOpacity = leaf.opacity * (0.48 + leaf.depth * 0.52)
+            let departureOpacity = CGFloat(pow(Double(1 - departure), 1.18))
+            let leafOpacity = leaf.opacity * (0.48 + leaf.depth * 0.52) * departureOpacity
             let shape = NSBezierPath()
             shape.move(to: NSPoint(x: baseX, y: 0))
             shape.curve(
@@ -458,7 +460,9 @@ final class QuotaCardView: NSView {
     }
 
     private func drawLeafSprite(_ leaf: FallingLeaf, image: NSImage) {
-        let baseOpacity = leaf.opacity * (0.54 + leaf.depth * 0.46)
+        let departure = leaf.departureProgress(in: bounds.height)
+        let departureOpacity = CGFloat(pow(Double(1 - departure), 1.18))
+        let baseOpacity = leaf.opacity * (0.54 + leaf.depth * 0.46) * departureOpacity
         let speed = max(1, hypot(leaf.velocity.dx, leaf.velocity.dy))
         let trail = CGVector(
             dx: -leaf.velocity.dx / speed * leaf.motionTrail,
@@ -516,13 +520,14 @@ final class QuotaCardView: NSView {
         transform.translateX(by: leaf.renderedX + offset.width, yBy: leaf.position.y + offset.height)
         transform.rotate(byDegrees: leaf.rotation)
         let flutterScale = 0.32 + abs(cos(leaf.swayPhase * 0.76)) * 0.68
-        let depthScale = 0.72 + leaf.depth * 0.56
+        let departure = leaf.departureProgress(in: bounds.height)
+        let depthScale = (0.72 + leaf.depth * 0.56) * (1 - departure * 0.46)
         transform.scaleX(by: flutterScale * depthScale, yBy: depthScale)
         transform.concat()
 
         if castsShadow {
             let shadow = NSShadow()
-            shadow.shadowColor = NSColor.black.withAlphaComponent(0.18 * leaf.opacity)
+            shadow.shadowColor = NSColor.black.withAlphaComponent(0.18 * leaf.opacity * (1 - departure))
             shadow.shadowBlurRadius = 0.75
             shadow.shadowOffset = NSSize(width: 0.35, height: -0.45)
             shadow.set()
