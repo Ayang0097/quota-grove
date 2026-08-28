@@ -11,8 +11,10 @@ struct FallingLeaf {
     var position: CGPoint
     var velocity: CGVector
     var verticalAcceleration: CGFloat
-    var horizontalDrag: CGFloat
-    var windAccelerationX: CGFloat
+    var verticalDrag: CGFloat
+    var windVelocityX: CGFloat
+    var windResponse: CGFloat
+    var flutterLift: CGFloat
     var swayPhase: CGFloat
     var swaySpeed: CGFloat
     var swayAmplitude: CGFloat
@@ -58,6 +60,7 @@ struct LeafParticleSystem {
 
     private(set) var leaves: [FallingLeaf] = []
     private var random = SeededLeafRandom(seed: 0x4752_4F56_454C_4541)
+    private var windFieldAge: TimeInterval = 0
 
     var isEmpty: Bool { leaves.isEmpty }
     var visibleCount: Int { leaves.lazy.filter(\.isVisible).count }
@@ -65,6 +68,7 @@ struct LeafParticleSystem {
     mutating func emit(forPercentageDrop drop: Int, in size: CGSize) {
         let steps = min(max(0, drop), Self.maximumAnimatedDrop)
         guard steps > 0, size.width > 0, size.height > 0 else { return }
+        if leaves.isEmpty { windFieldAge = 0 }
         let minimumFallSpeed = min(42, max(24, size.height / 4.4))
         let depthAnchors: [CGFloat] = [0.2, 0.78, 0.38, 0.58, 0.92, 0.28, 0.68, 0.48]
         let focusPattern: [FallingLeafFocus] = [.crisp, .motion, .soft, .motion, .crisp, .motion, .soft, .motion]
@@ -87,8 +91,10 @@ struct LeafParticleSystem {
                         dy: -random.cgFloat(in: minimumFallSpeed...(minimumFallSpeed + 8)) * motionScale
                     ),
                     verticalAcceleration: random.cgFloat(in: 8...15),
-                    horizontalDrag: random.cgFloat(in: 0.12...0.24),
-                    windAccelerationX: -random.cgFloat(in: 4...10),
+                    verticalDrag: random.cgFloat(in: 0.45...0.75),
+                    windVelocityX: -random.cgFloat(in: 22...36),
+                    windResponse: random.cgFloat(in: 1.4...2.1),
+                    flutterLift: random.cgFloat(in: 3...7),
                     swayPhase: random.cgFloat(in: 0...(2 * .pi)),
                     swaySpeed: random.cgFloat(in: 1.7...3.1),
                     swayAmplitude: random.cgFloat(in: 1.4...4.8) * (0.72 + depth * 0.34),
@@ -110,8 +116,9 @@ struct LeafParticleSystem {
     mutating func emitManualBurst(in size: CGSize) {
         guard size.width > 0, size.height > 0 else { return }
         leaves.removeAll(keepingCapacity: true)
+        windFieldAge = 0
 
-        let gravityBase = min(64, max(42, size.height / 2.4))
+        let gravityBase = min(70, max(54, size.height / 2.1))
         let waveStartDelays: [Double] = [0, 0.18, 0.38, 0.66, 0.94]
         let focusPattern: [FallingLeafFocus] = [.crisp, .soft, .motion, .motion]
         let spriteVariants = [0, 2]
@@ -131,23 +138,25 @@ struct LeafParticleSystem {
                         y: size.height + random.cgFloat(in: -10...22)
                     ),
                     velocity: CGVector(
-                        dx: -random.cgFloat(in: 58...82) * (0.84 + depth * 0.28),
-                        dy: -random.cgFloat(in: 6...14) * (0.82 + depth * 0.28)
+                        dx: -random.cgFloat(in: 8...18) * (0.84 + depth * 0.28),
+                        dy: -random.cgFloat(in: 2...8) * (0.82 + depth * 0.28)
                     ),
-                    verticalAcceleration: random.cgFloat(in: gravityBase...(gravityBase + 18)) * (0.82 + depth * 0.28),
-                    horizontalDrag: random.cgFloat(in: 0.12...0.24),
-                    windAccelerationX: -random.cgFloat(in: 34...58) * (0.84 + depth * 0.28),
+                    verticalAcceleration: random.cgFloat(in: gravityBase...(gravityBase + 14)) * (0.82 + depth * 0.28),
+                    verticalDrag: random.cgFloat(in: 0.78...1.08),
+                    windVelocityX: -random.cgFloat(in: 50...76) * (0.84 + depth * 0.28),
+                    windResponse: random.cgFloat(in: 1.5...2.4),
+                    flutterLift: random.cgFloat(in: 14...26),
                     swayPhase: random.cgFloat(in: 0...(2 * .pi)),
-                    swaySpeed: random.cgFloat(in: 1.6...3.4),
-                    swayAmplitude: random.cgFloat(in: 1.8...6.2) * (0.7 + depth * 0.38),
+                    swaySpeed: random.cgFloat(in: 1.9...3.9),
+                    swayAmplitude: random.cgFloat(in: 3.2...8.8) * (0.7 + depth * 0.38),
                     rotation: random.cgFloat(in: -72...72),
-                    angularVelocity: random.cgFloat(in: -96...96) * (0.74 + depth * 0.38),
+                    angularVelocity: random.cgFloat(in: -38...38) * (0.74 + depth * 0.38),
                     size: random.cgFloat(in: 8.5...16),
                     depth: depth,
                     focus: focus,
-                    motionTrail: focus == .motion ? random.cgFloat(in: 3.6...8.4) : 0,
+                    motionTrail: focus == .motion ? random.cgFloat(in: 2.8...6.2) : 0,
                     age: -startDelay,
-                    lifetime: random.double(in: 3.0...4.2),
+                    lifetime: random.double(in: 3.4...4.6),
                     colorVariant: spriteVariants[random.int(in: 0..<spriteVariants.count)],
                     textureSeed: random.int(in: 1..<10_000)
                 ))
@@ -159,18 +168,28 @@ struct LeafParticleSystem {
     mutating func advance(by deltaTime: TimeInterval) {
         let delta = min(max(deltaTime, 0), 1.0 / 15.0)
         guard delta > 0 else { return }
+        windFieldAge += delta
+        let gustAge = CGFloat(windFieldAge)
+        let gustRise = 1 - exp(-gustAge * 3.4)
+        let gustDecay = exp(-max(0, gustAge - 1.2) * 0.72)
+        let windEnvelope = 0.22 + 0.78 * gustRise * gustDecay
 
         for index in leaves.indices {
             leaves[index].age += delta
             guard leaves[index].age >= 0 else { continue }
-            let gustStrength = CGFloat(exp(-leaves[index].age * 2.35))
-            leaves[index].velocity.dy -= leaves[index].verticalAcceleration * delta
-            leaves[index].velocity.dx += leaves[index].windAccelerationX * gustStrength * delta
-            leaves[index].velocity.dx *= max(0, 1 - leaves[index].horizontalDrag * delta)
+            leaves[index].swayPhase += leaves[index].swaySpeed * delta
+            let windFlutter = 1 + sin(leaves[index].swayPhase * 0.82 + leaves[index].depth * 2.4) * 0.12
+            let targetWindVelocity = leaves[index].windVelocityX * windEnvelope * windFlutter
+            let windBlend = min(1, leaves[index].windResponse * CGFloat(delta))
+            leaves[index].velocity.dx += (targetWindVelocity - leaves[index].velocity.dx) * windBlend
+            let verticalAirflow = sin(leaves[index].swayPhase * 1.24 + leaves[index].depth * .pi)
+                * leaves[index].flutterLift
+            leaves[index].velocity.dy -= (leaves[index].verticalAcceleration + verticalAirflow) * delta
+            leaves[index].velocity.dy *= max(0, 1 - leaves[index].verticalDrag * CGFloat(delta))
             leaves[index].position.x += leaves[index].velocity.dx * delta
             leaves[index].position.y += leaves[index].velocity.dy * delta
-            leaves[index].swayPhase += leaves[index].swaySpeed * delta
-            leaves[index].rotation += leaves[index].angularVelocity * delta
+            let flutterRotation = sin(leaves[index].swayPhase) * 18
+            leaves[index].rotation += (leaves[index].angularVelocity + flutterRotation) * delta
         }
         leaves.removeAll { leaf in
             leaf.age >= leaf.lifetime || leaf.position.y < -leaf.size * 2
@@ -179,6 +198,7 @@ struct LeafParticleSystem {
 
     mutating func removeAll() {
         leaves.removeAll(keepingCapacity: true)
+        windFieldAge = 0
     }
 }
 

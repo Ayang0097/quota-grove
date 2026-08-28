@@ -21,6 +21,7 @@ internal sealed class LeafBurstAnimator : IDisposable
     private readonly List<LeafVisual> _leaves = [];
     private DateTime _previousTick;
     private double _layerHeight;
+    private double _burstAge;
 
     public LeafBurstAnimator(Canvas layer)
     {
@@ -39,9 +40,10 @@ internal sealed class LeafBurstAnimator : IDisposable
 
         Clear();
         _layerHeight = height;
+        _burstAge = 0;
         var generated = new List<LeafVisual>(BurstLeafCount);
         var index = 0;
-        var gravityBase = Math.Clamp(height / 2.4, 42, 64);
+        var gravityBase = Math.Clamp(height / 2.1, 54, 70);
         for (var wave = 0; wave < BurstWaveCounts.Length; wave++)
         {
             for (var waveIndex = 0; waveIndex < BurstWaveCounts[wave]; waveIndex++)
@@ -78,19 +80,21 @@ internal sealed class LeafBurstAnimator : IDisposable
                     BaseBlurRadius = baseBlurRadius,
                     X = NextDouble(width * 0.72, width * 1.16),
                     Y = -size - NextDouble(-6, height * 0.2),
-                    VelocityX = -NextDouble(58, 82) * (0.84 + depth * 0.28),
-                    VelocityY = NextDouble(6, 14) * (0.82 + depth * 0.28),
-                    Gravity = NextDouble(gravityBase, gravityBase + 18) * (0.82 + depth * 0.28),
-                    HorizontalDrag = NextDouble(0.12, 0.24),
-                    WindAccelerationX = -NextDouble(34, 58) * (0.84 + depth * 0.28),
+                    VelocityX = -NextDouble(8, 18) * (0.84 + depth * 0.28),
+                    VelocityY = NextDouble(2, 8) * (0.82 + depth * 0.28),
+                    Gravity = NextDouble(gravityBase, gravityBase + 14) * (0.82 + depth * 0.28),
+                    VerticalDrag = NextDouble(0.78, 1.08),
+                    WindVelocityX = -NextDouble(50, 76) * (0.84 + depth * 0.28),
+                    WindResponse = NextDouble(1.5, 2.4),
+                    FlutterLift = NextDouble(14, 26),
                     SwayPhase = NextDouble(0, Math.PI * 2),
-                    SwaySpeed = NextDouble(1.6, 3.4),
-                    SwayAmplitude = NextDouble(2.4, 8.2) * (0.7 + depth * 0.38),
+                    SwaySpeed = NextDouble(1.9, 3.9),
+                    SwayAmplitude = NextDouble(3.2, 8.8) * (0.7 + depth * 0.38),
                     Rotation = NextDouble(-72, 72),
-                    AngularVelocity = NextDouble(-96, 96) * (0.74 + depth * 0.38),
+                    AngularVelocity = NextDouble(-38, 38) * (0.74 + depth * 0.38),
                     Depth = depth,
                     Age = -(BurstWaveStartDelays[wave] + waveIndex * 0.012 + NextDouble(0, 0.12)),
-                    Lifetime = NextDouble(3.0, 4.2)
+                    Lifetime = NextDouble(3.4, 4.6)
                 });
                 index++;
             }
@@ -124,6 +128,10 @@ internal sealed class LeafBurstAnimator : IDisposable
         var now = DateTime.UtcNow;
         var delta = Math.Clamp((now - _previousTick).TotalSeconds, 0, 1.0 / 15.0);
         _previousTick = now;
+        _burstAge += delta;
+        var gustRise = 1 - Math.Exp(-_burstAge * 3.4);
+        var gustDecay = Math.Exp(-Math.Max(0, _burstAge - 1.2) * 0.72);
+        var windEnvelope = 0.22 + 0.78 * gustRise * gustDecay;
 
         for (var index = _leaves.Count - 1; index >= 0; index--)
         {
@@ -135,14 +143,18 @@ internal sealed class LeafBurstAnimator : IDisposable
                 continue;
             }
 
-            var gustStrength = Math.Exp(-leaf.Age * 2.35);
-            leaf.VelocityY += leaf.Gravity * delta;
-            leaf.VelocityX += leaf.WindAccelerationX * gustStrength * delta;
-            leaf.VelocityX *= Math.Max(0, 1 - leaf.HorizontalDrag * delta);
+            leaf.SwayPhase += leaf.SwaySpeed * delta;
+            var windFlutter = 1 + Math.Sin(leaf.SwayPhase * 0.82 + leaf.Depth * 2.4) * 0.12;
+            var targetWindVelocity = leaf.WindVelocityX * windEnvelope * windFlutter;
+            var windBlend = Math.Min(1, leaf.WindResponse * delta);
+            leaf.VelocityX += (targetWindVelocity - leaf.VelocityX) * windBlend;
+            var verticalAirflow = Math.Sin(leaf.SwayPhase * 1.24 + leaf.Depth * Math.PI) * leaf.FlutterLift;
+            leaf.VelocityY += (leaf.Gravity + verticalAirflow) * delta;
+            leaf.VelocityY *= Math.Max(0, 1 - leaf.VerticalDrag * delta);
             leaf.X += leaf.VelocityX * delta;
             leaf.Y += leaf.VelocityY * delta;
-            leaf.SwayPhase += leaf.SwaySpeed * delta;
-            leaf.Rotation += leaf.AngularVelocity * delta;
+            var flutterRotation = Math.Sin(leaf.SwayPhase) * 18;
+            leaf.Rotation += (leaf.AngularVelocity + flutterRotation) * delta;
             var departure = BottomDepartureProgress(leaf.Y, _layerHeight);
 
             if (leaf.Age >= leaf.Lifetime || departure >= 1 || leaf.Y > _layerHeight + leaf.Image.Height * 1.5)
@@ -207,8 +219,10 @@ internal sealed class LeafBurstAnimator : IDisposable
         public double VelocityX { get; set; }
         public double VelocityY { get; set; }
         public double Gravity { get; init; }
-        public double HorizontalDrag { get; init; }
-        public double WindAccelerationX { get; init; }
+        public double VerticalDrag { get; init; }
+        public double WindVelocityX { get; init; }
+        public double WindResponse { get; init; }
+        public double FlutterLift { get; init; }
         public double SwayPhase { get; set; }
         public double SwaySpeed { get; init; }
         public double SwayAmplitude { get; init; }
