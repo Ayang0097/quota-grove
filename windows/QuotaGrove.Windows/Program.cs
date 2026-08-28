@@ -9,6 +9,8 @@ namespace QuotaGrove.Windows;
 
 internal static class Program
 {
+    private static readonly TimeSpan QuotaRefreshInterval = TimeSpan.FromSeconds(10);
+
     [STAThread]
     public static int Main(string[] args)
     {
@@ -55,7 +57,7 @@ internal static class Program
             window.RefreshRequested += async (_, _) => await RefreshAsync();
             window.Show();
 
-            refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(20) };
+            refreshTimer = new DispatcherTimer { Interval = QuotaRefreshInterval };
             refreshTimer.Tick += async (_, _) => await RefreshAsync();
             refreshTimer.Start();
             await RefreshAsync();

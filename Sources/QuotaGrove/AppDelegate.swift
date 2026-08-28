@@ -1,6 +1,8 @@
 import AppKit
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    private static let quotaRefreshInterval: TimeInterval = 10
+
     private let source = LocalRateLimitSource()
     private let sourceQueue = DispatchQueue(label: "com.ayang.quotagrove.quota-source", qos: .utility)
     private let processMonitor = CodexProcessMonitor()
@@ -39,7 +41,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         processMonitor.start()
 
-        refreshTimer = Timer.scheduledTimer(withTimeInterval: 20, repeats: true) { [weak self] _ in
+        refreshTimer = Timer.scheduledTimer(withTimeInterval: Self.quotaRefreshInterval, repeats: true) { [weak self] _ in
             self?.refreshQuota(force: false)
         }
         if let refreshTimer { RunLoop.main.add(refreshTimer, forMode: .common) }
