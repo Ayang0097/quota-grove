@@ -67,12 +67,13 @@ internal sealed class LeafBurstAnimator : IDisposable
                 generated.Add(new LeafVisual
                 {
                     Image = image,
-                    X = NextDouble(width * 0.05, width * 1.05),
-                    Y = -size - NextDouble(-4, height * 0.23),
-                    VelocityX = NextDouble(-22, 10) * (0.84 + depth * 0.28),
-                    VelocityY = NextDouble(8, 18) * (0.82 + depth * 0.28),
+                    X = NextDouble(width * 0.72, width * 1.16),
+                    Y = -size - NextDouble(-6, height * 0.2),
+                    VelocityX = -NextDouble(58, 82) * (0.84 + depth * 0.28),
+                    VelocityY = NextDouble(6, 14) * (0.82 + depth * 0.28),
                     Gravity = NextDouble(gravityBase, gravityBase + 18) * (0.82 + depth * 0.28),
-                    HorizontalDrag = NextDouble(0.18, 0.34),
+                    HorizontalDrag = NextDouble(0.12, 0.24),
+                    WindAccelerationX = -NextDouble(34, 58) * (0.84 + depth * 0.28),
                     SwayPhase = NextDouble(0, Math.PI * 2),
                     SwaySpeed = NextDouble(1.6, 3.4),
                     SwayAmplitude = NextDouble(2.4, 8.2) * (0.7 + depth * 0.38),
@@ -126,7 +127,9 @@ internal sealed class LeafBurstAnimator : IDisposable
                 continue;
             }
 
+            var gustStrength = Math.Exp(-leaf.Age * 2.35);
             leaf.VelocityY += leaf.Gravity * delta;
+            leaf.VelocityX += leaf.WindAccelerationX * gustStrength * delta;
             leaf.VelocityX *= Math.Max(0, 1 - leaf.HorizontalDrag * delta);
             leaf.X += leaf.VelocityX * delta;
             leaf.Y += leaf.VelocityY * delta;
@@ -178,6 +181,7 @@ internal sealed class LeafBurstAnimator : IDisposable
         public double VelocityY { get; set; }
         public double Gravity { get; init; }
         public double HorizontalDrag { get; init; }
+        public double WindAccelerationX { get; init; }
         public double SwayPhase { get; set; }
         public double SwaySpeed { get; init; }
         public double SwayAmplitude { get; init; }

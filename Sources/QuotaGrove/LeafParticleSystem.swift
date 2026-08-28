@@ -12,6 +12,7 @@ struct FallingLeaf {
     var velocity: CGVector
     var verticalAcceleration: CGFloat
     var horizontalDrag: CGFloat
+    var windAccelerationX: CGFloat
     var swayPhase: CGFloat
     var swaySpeed: CGFloat
     var swayAmplitude: CGFloat
@@ -79,6 +80,7 @@ struct LeafParticleSystem {
                     ),
                     verticalAcceleration: random.cgFloat(in: 8...15),
                     horizontalDrag: random.cgFloat(in: 0.12...0.24),
+                    windAccelerationX: -random.cgFloat(in: 4...10),
                     swayPhase: random.cgFloat(in: 0...(2 * .pi)),
                     swaySpeed: random.cgFloat(in: 1.7...3.1),
                     swayAmplitude: random.cgFloat(in: 1.4...4.8) * (0.72 + depth * 0.34),
@@ -117,15 +119,16 @@ struct LeafParticleSystem {
 
                 leaves.append(FallingLeaf(
                     position: CGPoint(
-                        x: random.cgFloat(in: size.width * 0.05...size.width * 1.05),
-                        y: size.height + random.cgFloat(in: -4...24)
+                        x: random.cgFloat(in: size.width * 0.72...size.width * 1.16),
+                        y: size.height + random.cgFloat(in: -10...22)
                     ),
                     velocity: CGVector(
-                        dx: random.cgFloat(in: -16...7) * (0.84 + depth * 0.28),
-                        dy: -random.cgFloat(in: 8...18) * (0.82 + depth * 0.28)
+                        dx: -random.cgFloat(in: 58...82) * (0.84 + depth * 0.28),
+                        dy: -random.cgFloat(in: 6...14) * (0.82 + depth * 0.28)
                     ),
                     verticalAcceleration: random.cgFloat(in: gravityBase...(gravityBase + 18)) * (0.82 + depth * 0.28),
-                    horizontalDrag: random.cgFloat(in: 0.18...0.34),
+                    horizontalDrag: random.cgFloat(in: 0.12...0.24),
+                    windAccelerationX: -random.cgFloat(in: 34...58) * (0.84 + depth * 0.28),
                     swayPhase: random.cgFloat(in: 0...(2 * .pi)),
                     swaySpeed: random.cgFloat(in: 1.6...3.4),
                     swayAmplitude: random.cgFloat(in: 1.8...6.2) * (0.7 + depth * 0.38),
@@ -152,7 +155,9 @@ struct LeafParticleSystem {
         for index in leaves.indices {
             leaves[index].age += delta
             guard leaves[index].age >= 0 else { continue }
+            let gustStrength = CGFloat(exp(-leaves[index].age * 2.35))
             leaves[index].velocity.dy -= leaves[index].verticalAcceleration * delta
+            leaves[index].velocity.dx += leaves[index].windAccelerationX * gustStrength * delta
             leaves[index].velocity.dx *= max(0, 1 - leaves[index].horizontalDrag * delta)
             leaves[index].position.x += leaves[index].velocity.dx * delta
             leaves[index].position.y += leaves[index].velocity.dy * delta
