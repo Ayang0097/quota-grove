@@ -16,6 +16,8 @@ protocol QuotaCardViewDelegate: AnyObject {
 }
 
 final class QuotaCardView: NSView {
+    private static let cardBorderWidth: CGFloat = 0.5
+
     static let ambientLeafInterval: TimeInterval = 3
 
     weak var delegate: QuotaCardViewDelegate?
@@ -228,7 +230,7 @@ final class QuotaCardView: NSView {
         NSGraphicsContext.restoreGraphicsState()
 
         currentBorderColor.setStroke()
-        shell.lineWidth = 1
+        shell.lineWidth = Self.cardBorderWidth
         shell.stroke()
 
         let trackRect = NSRect(
@@ -277,7 +279,7 @@ final class QuotaCardView: NSView {
         NSGraphicsContext.restoreGraphicsState()
 
         currentBorderColor.setStroke()
-        clip.lineWidth = 1
+        clip.lineWidth = Self.cardBorderWidth
         clip.stroke()
 
         drawSummary()

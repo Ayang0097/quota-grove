@@ -24,6 +24,7 @@ internal sealed class MainWindow : Window
     private const double StashedWidth = 21;
     private const double SafeInset = 27;
     private const double ShellRadius = 24;
+    private const double CardBorderThickness = 0.625;
     private const double ContentInset = 20;
     private const double ContentWidth = 228;
     private const double ProgressHeight = 7;
@@ -91,7 +92,7 @@ internal sealed class MainWindow : Window
         _shell = new Border
         {
             CornerRadius = new CornerRadius(ShellRadius),
-            BorderThickness = new Thickness(1.25),
+            BorderThickness = new Thickness(CardBorderThickness),
             ClipToBounds = true,
             SnapsToDevicePixels = true
         };
