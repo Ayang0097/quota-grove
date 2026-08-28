@@ -28,9 +28,9 @@ macOS 卡片会在额度下降时播放落叶，并在卡片可见且系统未�
 
 Windows 版按 macOS 卡片的物理观感重新换算为紧凑尺寸，系统缩放只提升渲染清晰度，不再把卡片设计尺寸重复放大。
 
-![Quota Grove Windows compact layout](docs/screenshots/quota-grove-windows-compact-v122.png)
+![Quota Grove Windows compact layout](docs/screenshots/quota-grove-windows-compact-v123.png)
 
-![Quota Grove Windows expanded layout](docs/screenshots/quota-grove-windows-expanded-v122.png)
+![Quota Grove Windows expanded layout](docs/screenshots/quota-grove-windows-expanded-v123.png)
 
 ## 特点
 
