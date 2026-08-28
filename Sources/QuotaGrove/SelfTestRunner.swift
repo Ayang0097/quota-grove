@@ -80,6 +80,8 @@ enum SelfTestRunner {
         expect(AppText.quotaUsage(remaining: 54, used: 46, language: .chinese) == "剩余 54% · 已用 46%", "中文额度详情应正确", report: &report)
         expect(AppText.quotaUsage(remaining: 54, used: 46, language: .english) == "54% left · 46% used", "英文额度详情应正确", report: &report)
 
+        testLargeLogLookup(report: &report)
+
         var onePointDrop = LeafParticleSystem()
         onePointDrop.emit(forPercentageDrop: 1, in: CGSize(width: 200, height: 80))
         expect(onePointDrop.leaves.count == 8, "每下降 1% 应生成 8 片轻量落叶", report: &report)
@@ -122,6 +124,32 @@ enum SelfTestRunner {
         expect(departingLeaf.departureProgress(in: 80) > 0.99, "落叶接近底部时应完成景深退场", report: &report)
 
         return report
+    }
+
+    private static func testLargeLogLookup(report: inout Report) {
+        let fileManager = FileManager.default
+        let directory = fileManager.temporaryDirectory
+            .appendingPathComponent("quota-grove-source-test-\(UUID().uuidString)", isDirectory: true)
+        do {
+            try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+            defer { try? fileManager.removeItem(at: directory) }
+
+            let freshURL = directory.appendingPathComponent("fresh.jsonl")
+            let staleURL = directory.appendingPathComponent("stale.jsonl")
+            let freshEvent = #"{"timestamp":"2026-08-28T06:00:00.000Z","payload":{"type":"token_count","rate_limits":{"limit_id":"codex","primary":{"used_percent":7,"window_minutes":10080}}}}"#
+            let staleEvent = #"{"timestamp":"2026-08-27T14:47:00.000Z","payload":{"type":"token_count","rate_limits":{"limit_id":"codex","primary":{"used_percent":72,"window_minutes":10080}}}}"#
+            let fillerLine = #"{"payload":{"type":"message","text":"padding"}}"# + "\n"
+            let freshData = Data((freshEvent + "\n" + String(repeating: fillerLine, count: 7_000)).utf8)
+            try freshData.write(to: freshURL)
+            try Data((staleEvent + "\n").utf8).write(to: staleURL)
+            try fileManager.setAttributes([.modificationDate: Date()], ofItemAtPath: freshURL.path)
+            try fileManager.setAttributes([.modificationDate: Date().addingTimeInterval(-60)], ofItemAtPath: staleURL.path)
+
+            let snapshot = LocalRateLimitSource(root: directory, fileManager: fileManager).latestSnapshot()
+            expect(snapshot?.remainingPercent == 93, "大日志尾部没有额度事件时不得回退到旧文件的 28%", report: &report)
+        } catch {
+            report.failures.append("大日志额度回归测试：\(error.localizedDescription)")
+        }
     }
 
     private static func expect(_ condition: @autoclosure () throws -> Bool, _ message: String, report: inout Report) {

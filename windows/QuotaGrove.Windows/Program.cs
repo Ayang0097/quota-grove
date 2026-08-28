@@ -77,7 +77,8 @@ internal static class Program
             try
             {
                 var snapshot = await Task.Run(source.LatestSnapshot);
-                if (snapshot is not null)
+                if (snapshot is not null &&
+                    (settings.LastSnapshot is null || snapshot.FetchedAt >= settings.LastSnapshot.FetchedAt))
                 {
                     settings.LastSnapshot = snapshot;
                     window.ApplySnapshot(snapshot);

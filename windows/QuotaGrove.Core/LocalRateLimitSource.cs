@@ -5,8 +5,10 @@ namespace QuotaGrove.Core;
 
 public sealed class LocalRateLimitSource
 {
-    private const int TailLimit = 256 * 1024;
+    private const int SearchChunkSize = 256 * 1024;
+    private const int IncrementalSearchLimit = 16 * 1024 * 1024;
     private readonly IReadOnlyList<string> _roots;
+    private readonly Dictionary<string, QuotaSnapshot> _snapshotsByFile = new(StringComparer.OrdinalIgnoreCase);
 
     public LocalRateLimitSource(IEnumerable<string>? roots = null)
     {
@@ -21,15 +23,25 @@ public sealed class LocalRateLimitSource
 
     public QuotaSnapshot? LatestSnapshot()
     {
+        QuotaSnapshot? newestSnapshot = null;
         foreach (var file in DiscoverCandidates().Take(32))
         {
-            var snapshot = SnapshotFromTail(file);
-            if (snapshot is not null) return snapshot;
+            if (newestSnapshot is not null && file.Modified <= newestSnapshot.FetchedAt.UtcDateTime) break;
+
+            _snapshotsByFile.TryGetValue(file.Path, out var cachedSnapshot);
+            var scannedSnapshot = SnapshotFromEnd(
+                file.Path,
+                cachedSnapshot is null ? null : IncrementalSearchLimit);
+            var fileSnapshot = Newer(scannedSnapshot, cachedSnapshot);
+            if (fileSnapshot is null) continue;
+
+            _snapshotsByFile[file.Path] = fileSnapshot;
+            newestSnapshot = Newer(newestSnapshot, fileSnapshot);
         }
-        return null;
+        return newestSnapshot;
     }
 
-    private IEnumerable<string> DiscoverCandidates()
+    private IEnumerable<(string Path, DateTime Modified)> DiscoverCandidates()
     {
         var candidates = new List<(string Path, DateTime Modified)>();
         foreach (var root in _roots)
@@ -50,35 +62,90 @@ public sealed class LocalRateLimitSource
             catch (IOException) { }
             catch (UnauthorizedAccessException) { }
         }
-        return candidates.OrderByDescending(item => item.Modified).Select(item => item.Path);
+        return candidates.OrderByDescending(item => item.Modified);
     }
 
-    private static QuotaSnapshot? SnapshotFromTail(string path)
+    private static QuotaSnapshot? SnapshotFromEnd(string path, int? maximumBytes)
     {
         try
         {
             using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-            var start = Math.Max(0, stream.Length - TailLimit);
-            stream.Seek(start, SeekOrigin.Begin);
-            using var reader = new StreamReader(stream, Encoding.UTF8, true, 16 * 1024, leaveOpen: false);
-            var data = reader.ReadToEnd();
-            var lines = data.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            for (var index = lines.Length - 1; index >= 0; index--)
+            var minimumOffset = maximumBytes is { } limit
+                ? Math.Max(0, stream.Length - limit)
+                : 0;
+            var cursor = stream.Length;
+            var suffix = Array.Empty<byte>();
+
+            while (cursor > minimumOffset)
             {
-                if (!lines[index].Contains("\"rate_limits\"", StringComparison.Ordinal)) continue;
-                try
+                var start = Math.Max(minimumOffset, cursor - SearchChunkSize);
+                var beginsAtLineBoundary = start == 0;
+                if (start > 0)
                 {
-                    var snapshot = QuotaEventParser.ParseLine(lines[index]);
-                    if (snapshot is not null) return snapshot;
+                    stream.Seek(start - 1, SeekOrigin.Begin);
+                    beginsAtLineBoundary = stream.ReadByte() == '\n';
                 }
-                catch (JsonException) { }
-                catch (QuotaParseException) { }
-                catch (ArgumentOutOfRangeException) { }
+
+                var byteCount = checked((int)(cursor - start));
+                var buffer = new byte[byteCount + suffix.Length];
+                stream.Seek(start, SeekOrigin.Begin);
+                stream.ReadExactly(buffer.AsSpan(0, byteCount));
+                suffix.CopyTo(buffer, byteCount);
+
+                var ranges = LineRanges(buffer);
+                var firstCompleteLine = beginsAtLineBoundary ? 0 : 1;
+                for (var index = ranges.Count - 1; index >= firstCompleteLine; index--)
+                {
+                    var (lineStart, lineLength) = ranges[index];
+                    if (lineLength == 0) continue;
+                    var line = Encoding.UTF8.GetString(buffer, lineStart, lineLength).TrimEnd('\r');
+                    if (!line.Contains("\"rate_limits\"", StringComparison.Ordinal)) continue;
+                    try
+                    {
+                        var snapshot = QuotaEventParser.ParseLine(line);
+                        if (snapshot is not null) return snapshot;
+                    }
+                    catch (JsonException) { }
+                    catch (QuotaParseException) { }
+                    catch (ArgumentOutOfRangeException) { }
+                }
+
+                if (beginsAtLineBoundary || ranges.Count == 0)
+                {
+                    suffix = Array.Empty<byte>();
+                }
+                else
+                {
+                    var (lineStart, lineLength) = ranges[0];
+                    suffix = buffer.AsSpan(lineStart, lineLength).ToArray();
+                }
+                cursor = start;
             }
         }
         catch (IOException) { }
         catch (UnauthorizedAccessException) { }
         return null;
+    }
+
+    private static List<(int Start, int Length)> LineRanges(byte[] data)
+    {
+        var ranges = new List<(int Start, int Length)>();
+        var lineStart = 0;
+        for (var index = 0; index < data.Length; index++)
+        {
+            if (data[index] != (byte)'\n') continue;
+            ranges.Add((lineStart, index - lineStart));
+            lineStart = index + 1;
+        }
+        ranges.Add((lineStart, data.Length - lineStart));
+        return ranges;
+    }
+
+    private static QuotaSnapshot? Newer(QuotaSnapshot? left, QuotaSnapshot? right)
+    {
+        if (left is null) return right;
+        if (right is null) return left;
+        return left.FetchedAt >= right.FetchedAt ? left : right;
     }
 
     private static IEnumerable<string> DefaultRoots()

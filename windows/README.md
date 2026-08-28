@@ -38,4 +38,4 @@ dotnet publish windows/QuotaGrove.Windows/QuotaGrove.Windows.csproj `
 
 生成的 `QuotaGrove.exe` 是自包含版本，不要求用户预先安装 .NET。当前公开构建未购买 Windows 代码签名证书，首次运行可能出现 Microsoft Defender SmartScreen 提示。
 
-Windows 自动构建会同时运行 28 项自检、启动可执行文件，并渲染中英文收起态、英文展开态和 1% 废土预览图作为验收证据。
+Windows 自动构建会同时运行 30 项自检（包含大日志额度防回退检查）、启动可执行文件，并渲染中英文收起态、英文展开态和 1% 废土预览图作为验收证据。

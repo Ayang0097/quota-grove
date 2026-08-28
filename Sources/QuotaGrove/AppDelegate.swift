@@ -63,14 +63,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func refreshQuota(force: Bool) {
-        guard codexIsRunning, !refreshInProgress else { return }
+        guard (codexIsRunning || force), !refreshInProgress else { return }
         refreshInProgress = true
         sourceQueue.async { [weak self] in
             guard let self else { return }
             let snapshot = autoreleasepool { self.source.latestSnapshot() }
             DispatchQueue.main.async {
                 self.refreshInProgress = false
-                if let snapshot {
+                if let snapshot,
+                   self.currentSnapshot.map({ snapshot.fetchedAt >= $0.fetchedAt }) ?? true {
                     self.currentSnapshot = snapshot
                     QuotaSnapshotCache.save(snapshot)
                     self.updateCard()

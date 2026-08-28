@@ -68,12 +68,45 @@ public static class SelfTestRunner
         Expect(AppText.QuotaUsage(54, 46, AppLanguage.Chinese) == "剩余 54% · 已用 46%", "中文额度详情应正确");
         Expect(AppText.QuotaUsage(54, 46, AppLanguage.English) == "54% left · 46% used", "英文额度详情应正确");
 
+        TestLargeLogLookup();
+
         return new SelfTestReport(passed, failures);
 
         void Expect(bool condition, string message)
         {
             if (condition) passed++;
             else failures.Add(message);
+        }
+
+        void TestLargeLogLookup()
+        {
+            var directory = Path.Combine(Path.GetTempPath(), $"quota-grove-source-test-{Guid.NewGuid():N}");
+            try
+            {
+                Directory.CreateDirectory(directory);
+                var freshPath = Path.Combine(directory, "fresh.jsonl");
+                var stalePath = Path.Combine(directory, "stale.jsonl");
+                const string freshEvent = "{\"timestamp\":\"2026-08-28T06:00:00.000Z\",\"payload\":{\"type\":\"token_count\",\"rate_limits\":{\"limit_id\":\"codex\",\"primary\":{\"used_percent\":7,\"window_minutes\":10080}}}}";
+                const string staleEvent = "{\"timestamp\":\"2026-08-27T14:47:00.000Z\",\"payload\":{\"type\":\"token_count\",\"rate_limits\":{\"limit_id\":\"codex\",\"primary\":{\"used_percent\":72,\"window_minutes\":10080}}}}";
+                var filler = string.Concat(Enumerable.Repeat("{\"payload\":{\"type\":\"message\",\"text\":\"padding\"}}\n", 7_000));
+                File.WriteAllText(freshPath, freshEvent + "\n" + filler);
+                File.WriteAllText(stalePath, staleEvent + "\n");
+                File.SetLastWriteTimeUtc(freshPath, DateTime.UtcNow);
+                File.SetLastWriteTimeUtc(stalePath, DateTime.UtcNow.AddMinutes(-1));
+
+                var discovered = new LocalRateLimitSource([directory]).LatestSnapshot();
+                Expect(discovered?.RemainingPercent == 93, "大日志尾部没有额度事件时不得回退到旧文件的 28%");
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+            {
+                failures.Add($"大日志额度回归测试：{error.Message}");
+            }
+            finally
+            {
+                try { if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true); }
+                catch (IOException) { }
+                catch (UnauthorizedAccessException) { }
+            }
         }
     }
 }
