@@ -4,6 +4,23 @@ Quota Grove 是一个支持 macOS 与 Windows 的桌面悬浮卡片，用环境�
 
 卡片标题旁的 Codex 图标仅用于标明额度数据来自用户本机的 Codex/ChatGPT 桌面客户端；它不是 Quota Grove 的应用图标、仓库标志或产品品牌。
 
+[![Latest release](https://img.shields.io/github/v/release/Ayang0097/quota-grove?label=最新版&color=2fbd85)](https://github.com/Ayang0097/quota-grove/releases/latest)
+![macOS](https://img.shields.io/badge/macOS-13%2B-1f2937?logo=apple)
+![Windows](https://img.shields.io/badge/Windows-10%2F11-1674d1?logo=windows11)
+
+[下载最新版本](https://github.com/Ayang0097/quota-grove/releases/latest) · [查看安装说明](#下载与安装)
+
+## v1.3.0 最新更新
+
+- **主题落叶**：macOS 会在额度下降时播放轻量落叶，macOS 与 Windows 双击卡片都可触发大量落叶；树叶从右上方随风飘落，密度先少、后多、再少，颜色跟随森林、秋林、末日和废土主题变化。
+- **当地天气**：macOS 可选择跟随当地天气；下雨时显示远、中、近三层斜雨，下雪或雨雪混合时显示连续飘落的六向树枝状雪晶。
+- **节能与隐私**：卡片隐藏、贴边收纳或系统开启“减少动态效果”时自动暂停动画；天气功能默认关闭，仅在用户主动授权后查询模糊化位置。
+
+| 主题落叶 | 当地降雨（macOS） | 树枝状降雪（macOS） |
+| :---: | :---: | :---: |
+| ![Theme-synced falling leaves](docs/screenshots/quota-grove-leaf-animation.gif) | ![Weather-linked rain](docs/screenshots/quota-grove-weather-rain-v130.gif) | ![Weather-linked dendritic snow](docs/screenshots/quota-grove-weather-snow-v130.gif) |
+| 颜色随额度主题变化 | 远中近景斜雨层次 | 六向分枝雪晶连续飘落 |
+
 ## 效果展示
 
 ### 不同额度主题
