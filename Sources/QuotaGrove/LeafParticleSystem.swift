@@ -15,6 +15,8 @@ struct FallingLeaf {
     var windVelocityX: CGFloat
     var windResponse: CGFloat
     var flutterLift: CGFloat
+    var midSpreadX: CGFloat
+    var midSpreadY: CGFloat
     var swayPhase: CGFloat
     var swaySpeed: CGFloat
     var swayAmplitude: CGFloat
@@ -81,6 +83,8 @@ struct LeafParticleSystem {
                 let depth = min(1, max(0.1, depthAnchors[leafIndex] + random.cgFloat(in: -0.045...0.045)))
                 let focus = focusPattern[leafIndex]
                 let motionScale = 0.82 + depth * 0.34
+                let spreadLaneX = CGFloat((leafIndex * 3) % 7 - 3) / 3
+                let spreadLaneY = CGFloat((leafIndex * 5) % 7 - 3) / 3
                 leaves.append(FallingLeaf(
                     position: CGPoint(
                         x: random.cgFloat(in: size.width * 0.60...size.width * 1.12),
@@ -95,6 +99,8 @@ struct LeafParticleSystem {
                     windVelocityX: -random.cgFloat(in: 22...36),
                     windResponse: random.cgFloat(in: 1.4...2.1),
                     flutterLift: random.cgFloat(in: 3...7),
+                    midSpreadX: spreadLaneX * random.cgFloat(in: 4...8),
+                    midSpreadY: spreadLaneY * random.cgFloat(in: 6...10),
                     swayPhase: random.cgFloat(in: 0...(2 * .pi)),
                     swaySpeed: random.cgFloat(in: 1.7...3.1),
                     swayAmplitude: random.cgFloat(in: 1.4...4.8) * (0.72 + depth * 0.34),
@@ -131,6 +137,8 @@ struct LeafParticleSystem {
                 let startDelay = waveStartDelays[wave]
                     + Double(waveIndex) * 0.012
                     + random.double(in: 0...0.12)
+                let spreadLaneX = CGFloat((leafIndex * 5) % 9 - 4) / 4
+                let spreadLaneY = CGFloat((leafIndex * 7) % 11 - 5) / 5
 
                 leaves.append(FallingLeaf(
                     position: CGPoint(
@@ -146,6 +154,8 @@ struct LeafParticleSystem {
                     windVelocityX: -random.cgFloat(in: 50...76) * (0.84 + depth * 0.28),
                     windResponse: random.cgFloat(in: 1.5...2.4),
                     flutterLift: random.cgFloat(in: 14...26),
+                    midSpreadX: spreadLaneX * random.cgFloat(in: 16...28),
+                    midSpreadY: spreadLaneY * random.cgFloat(in: 22...38),
                     swayPhase: random.cgFloat(in: 0...(2 * .pi)),
                     swaySpeed: random.cgFloat(in: 1.9...3.9),
                     swayAmplitude: random.cgFloat(in: 3.2...8.8) * (0.7 + depth * 0.38),
@@ -173,6 +183,8 @@ struct LeafParticleSystem {
         let gustRise = 1 - exp(-gustAge * 3.4)
         let gustDecay = exp(-max(0, gustAge - 1.2) * 0.72)
         let windEnvelope = 0.22 + 0.78 * gustRise * gustDecay
+        let spreadTime = min(1, max(0, (gustAge - 0.55) / 2.0))
+        let spreadEnvelope = pow(sin(spreadTime * .pi), 2)
 
         for index in leaves.indices {
             leaves[index].age += delta
@@ -180,10 +192,12 @@ struct LeafParticleSystem {
             leaves[index].swayPhase += leaves[index].swaySpeed * delta
             let windFlutter = 1 + sin(leaves[index].swayPhase * 0.82 + leaves[index].depth * 2.4) * 0.12
             let targetWindVelocity = leaves[index].windVelocityX * windEnvelope * windFlutter
+                + leaves[index].midSpreadX * spreadEnvelope
             let windBlend = min(1, leaves[index].windResponse * CGFloat(delta))
             leaves[index].velocity.dx += (targetWindVelocity - leaves[index].velocity.dx) * windBlend
             let verticalAirflow = sin(leaves[index].swayPhase * 1.24 + leaves[index].depth * .pi)
                 * leaves[index].flutterLift
+                + leaves[index].midSpreadY * spreadEnvelope
             leaves[index].velocity.dy -= (leaves[index].verticalAcceleration + verticalAirflow) * delta
             leaves[index].velocity.dy *= max(0, 1 - leaves[index].verticalDrag * CGFloat(delta))
             leaves[index].position.x += leaves[index].velocity.dx * delta

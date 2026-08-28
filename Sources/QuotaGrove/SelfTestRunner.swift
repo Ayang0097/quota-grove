@@ -108,6 +108,12 @@ enum SelfTestRunner {
         expect(manualBurst.leaves.allSatisfy { $0.position.x >= 144 }, "双击落叶应统一从卡片右上方进入", report: &report)
         expect(manualBurst.leaves.allSatisfy { $0.windVelocityX < 0 }, "双击落叶应受到向左的风场牵引", report: &report)
         expect(manualBurst.leaves.allSatisfy { abs($0.velocity.dx) < 24 }, "双击落叶应以低初速进入而非被抛出", report: &report)
+        expect(
+            manualBurst.leaves.contains { $0.midSpreadY < -20 }
+                && manualBurst.leaves.contains { $0.midSpreadY > 20 },
+            "双击落叶中段应同时包含上托与下沉分层",
+            report: &report
+        )
         expect(manualBurst.leaves.filter { $0.focus == .crisp }.count == 12, "双击落叶应保留 12 片清晰叶片", report: &report)
         expect(manualBurst.leaves.allSatisfy { $0.verticalAcceleration >= 34 }, "双击落叶应具有自然重力加速度", report: &report)
         var departingLeaf = manualBurst.leaves[0]
