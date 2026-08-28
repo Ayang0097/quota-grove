@@ -8,12 +8,14 @@ on:
       - "windows/**"
       - "bg/**"
       - "Assets/CodexIcon.png"
+      - "Assets/Leaves/**"
       - ".github/workflows/windows-build.yml"
   pull_request:
     paths:
       - "windows/**"
       - "bg/**"
       - "Assets/CodexIcon.png"
+      - "Assets/Leaves/**"
       - ".github/workflows/windows-build.yml"
 
 permissions:
@@ -62,6 +64,7 @@ jobs:
           $expanded = (Resolve-Path "dist/previews").Path + "\expanded-54.png"
           $wasteland = (Resolve-Path "dist/previews").Path + "\wasteland-1.png"
           $chinese = (Resolve-Path "dist/previews").Path + "\collapsed-zh-54.png"
+          $leafBurst = (Resolve-Path "dist/previews").Path + "\leaf-burst-54.png"
 
           $renderCollapsed = Start-Process -FilePath $exe -ArgumentList @("--render-preview", "54", $collapsed) -Wait -PassThru
           if ($renderCollapsed.ExitCode -ne 0) { throw "Collapsed preview failed: $($renderCollapsed.ExitCode)" }
@@ -75,7 +78,10 @@ jobs:
           $renderChinese = Start-Process -FilePath $exe -ArgumentList @("--language", "zh", "--render-preview", "54", $chinese) -Wait -PassThru
           if ($renderChinese.ExitCode -ne 0) { throw "Chinese preview failed: $($renderChinese.ExitCode)" }
 
-          Get-Item $collapsed, $expanded, $wasteland, $chinese | ForEach-Object {
+          $renderLeafBurst = Start-Process -FilePath $exe -ArgumentList @("--render-preview", "54", $leafBurst, "--leaf-burst") -Wait -PassThru
+          if ($renderLeafBurst.ExitCode -ne 0) { throw "Leaf burst preview failed: $($renderLeafBurst.ExitCode)" }
+
+          Get-Item $collapsed, $expanded, $wasteland, $chinese, $leafBurst | ForEach-Object {
             if ($_.Length -lt 10000) { throw "Preview is unexpectedly small: $($_.FullName)" }
           }
 
@@ -101,6 +107,7 @@ jobs:
           Assert-PngSize $expanded 268 238
           Assert-PngSize $wasteland 268 107
           Assert-PngSize $chinese 268 107
+          Assert-PngSize $leafBurst 268 107
 
       - name: Package portable download
         shell: pwsh

@@ -33,6 +33,8 @@ internal sealed class MainWindow : Window
     private readonly SettingsStore? _settingsStore;
     private readonly bool _previewMode;
     private readonly Border _shell;
+    private readonly Canvas _leafLayer;
+    private readonly LeafBurstAnimator _leafAnimator;
     private readonly Canvas _summary;
     private readonly Canvas _details;
     private readonly Grid _stashedPanel;
@@ -54,10 +56,12 @@ internal sealed class MainWindow : Window
     private bool _isStashed;
     private bool _dragging;
     private bool _suppressClickAfterDrag;
+    private bool _suppressClickAfterDoubleClick;
     private Point _pointerDown;
     private EdgeSide? _edgeSide;
     private double _fullLeft;
     private double _fullTop;
+    private QuotaTheme _theme = QuotaTheme.Forest;
 
     public event EventHandler? RefreshRequested;
 
@@ -109,6 +113,14 @@ internal sealed class MainWindow : Window
                 new Point(0, 0.5),
                 new Point(1, 0.5))
         });
+
+        _leafLayer = new Canvas
+        {
+            ClipToBounds = true,
+            IsHitTestVisible = false
+        };
+        root.Children.Add(_leafLayer);
+        _leafAnimator = new LeafBurstAnimator(_leafLayer);
 
         _summary = new Canvas { Width = CardWidth, Height = CollapsedHeight, VerticalAlignment = VerticalAlignment.Top };
         root.Children.Add(_summary);
@@ -238,6 +250,7 @@ internal sealed class MainWindow : Window
         Closed += (_, _) =>
         {
             _clockTimer.Stop();
+            _leafAnimator.Dispose();
             SaveSettings();
         };
 
@@ -249,6 +262,7 @@ internal sealed class MainWindow : Window
     {
         _snapshot = snapshot;
         var theme = QuotaThemes.Select(snapshot?.RemainingPercent ?? 100);
+        _theme = theme;
         var style = QuotaThemes.Style(theme);
         _shell.Background = new ImageBrush(LoadImage(style.BackgroundAsset))
         {
@@ -267,6 +281,9 @@ internal sealed class MainWindow : Window
     }
 
     public void SetExpandedForPreview(bool expanded) => SetExpanded(expanded, save: false);
+
+    public void PlayLeafBurstForPreview() =>
+        _leafAnimator.PlayBurst(_theme, CardWidth, ActualHeight > 0 ? ActualHeight : Height, ignoreReducedMotion: true);
 
     public void SavePreview(string path)
     {
@@ -375,6 +392,8 @@ internal sealed class MainWindow : Window
         }
         _edgeSide = side;
         _isStashed = true;
+        _leafAnimator.Clear();
+        _leafLayer.Visibility = Visibility.Collapsed;
         var workArea = NativeMethods.WorkArea(this);
         Width = StashedWidth;
         Height = CollapsedHeight;
@@ -401,6 +420,7 @@ internal sealed class MainWindow : Window
         _summary.Visibility = Visibility.Visible;
         _details.Visibility = _expanded ? Visibility.Visible : Visibility.Collapsed;
         _stashedPanel.Visibility = Visibility.Collapsed;
+        _leafLayer.Visibility = Visibility.Visible;
         _shell.CornerRadius = new CornerRadius(ShellRadius);
         UpdateAccessibility();
     }
@@ -427,6 +447,8 @@ internal sealed class MainWindow : Window
         if (e.ClickCount >= 2)
         {
             _singleClickTimer.Stop();
+            _suppressClickAfterDoubleClick = true;
+            _leafAnimator.PlayBurst(_theme, CardWidth, ActualHeight > 0 ? ActualHeight : Height);
             RefreshRequested?.Invoke(this, EventArgs.Empty);
             e.Handled = true;
             return;
@@ -437,6 +459,12 @@ internal sealed class MainWindow : Window
     private void OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
         if (IsMouseCaptured) ReleaseMouseCapture();
+        if (_suppressClickAfterDoubleClick)
+        {
+            _suppressClickAfterDoubleClick = false;
+            e.Handled = true;
+            return;
+        }
         if (_suppressClickAfterDrag)
         {
             _suppressClickAfterDrag = false;
@@ -466,6 +494,7 @@ internal sealed class MainWindow : Window
         _isStashed = false;
         _summary.Visibility = Visibility.Visible;
         _stashedPanel.Visibility = Visibility.Collapsed;
+        _leafLayer.Visibility = Visibility.Visible;
         _details.Visibility = _expanded ? Visibility.Visible : Visibility.Collapsed;
         _shell.CornerRadius = new CornerRadius(ShellRadius);
         Width = CardWidth;
@@ -554,6 +583,7 @@ internal sealed class MainWindow : Window
         _summary.Visibility = Visibility.Visible;
         _details.Visibility = _expanded ? Visibility.Visible : Visibility.Collapsed;
         _stashedPanel.Visibility = Visibility.Collapsed;
+        _leafLayer.Visibility = Visibility.Visible;
         _shell.CornerRadius = new CornerRadius(ShellRadius);
         SaveSettings();
     }

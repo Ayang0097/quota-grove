@@ -42,6 +42,7 @@ struct FallingLeaf {
 struct LeafParticleSystem {
     static let leavesPerPercentagePoint = 8
     static let maximumAnimatedDrop = 4
+    static let manualBurstLeafCount = 48
 
     private(set) var leaves: [FallingLeaf] = []
     private var random = SeededLeafRandom(seed: 0x4752_4F56_454C_4541)
@@ -88,6 +89,50 @@ struct LeafParticleSystem {
                     textureSeed: random.int(in: 1..<10_000)
                 ))
             }
+        }
+    }
+
+    mutating func emitManualBurst(in size: CGSize) {
+        guard size.width > 0, size.height > 0 else { return }
+        leaves.removeAll(keepingCapacity: true)
+
+        let minimumFallSpeed = min(48, max(30, size.height / 3.4))
+        let focusPattern: [FallingLeafFocus] = [.crisp, .soft, .motion, .motion]
+        let spriteVariants = [0, 2]
+
+        for leafIndex in 0..<Self.manualBurstLeafCount {
+            let wave = leafIndex / 12
+            let waveIndex = leafIndex % 12
+            let depth = random.cgFloat(in: 0.14...0.98)
+            let focus = focusPattern[leafIndex % focusPattern.count]
+            let startDelay = Double(wave) * 0.18
+                + Double(waveIndex) * 0.035
+                + random.double(in: 0...0.16)
+            let motionScale = 0.8 + depth * 0.36
+
+            leaves.append(FallingLeaf(
+                position: CGPoint(
+                    x: random.cgFloat(in: size.width * 0.05...size.width * 1.05),
+                    y: size.height + random.cgFloat(in: -4...32)
+                ),
+                velocity: CGVector(
+                    dx: random.cgFloat(in: -18...8) * (0.84 + depth * 0.28),
+                    dy: -random.cgFloat(in: minimumFallSpeed...(minimumFallSpeed + 14)) * motionScale
+                ),
+                swayPhase: random.cgFloat(in: 0...(2 * .pi)),
+                swaySpeed: random.cgFloat(in: 1.6...3.4),
+                swayAmplitude: random.cgFloat(in: 1.8...6.2) * (0.7 + depth * 0.38),
+                rotation: random.cgFloat(in: -72...72),
+                angularVelocity: random.cgFloat(in: -96...96) * (0.74 + depth * 0.38),
+                size: random.cgFloat(in: 8.5...16),
+                depth: depth,
+                focus: focus,
+                motionTrail: focus == .motion ? random.cgFloat(in: 3.6...8.4) : 0,
+                age: -startDelay,
+                lifetime: random.double(in: 2.8...4.0),
+                colorVariant: spriteVariants[random.int(in: 0..<spriteVariants.count)],
+                textureSeed: random.int(in: 1..<10_000)
+            ))
         }
     }
 

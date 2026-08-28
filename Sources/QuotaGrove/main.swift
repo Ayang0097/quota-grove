@@ -59,7 +59,7 @@ private func renderLeafFrames(arguments: [String]) -> Never {
         let startPercent = Double(arguments[index + 1]),
         let endPercent = Double(arguments[index + 2])
     else {
-        FileHandle.standardError.write(Data("用法：QuotaGrove --render-leaf-frames <from-percent> <to-percent> <directory> [--expanded]\n".utf8))
+        FileHandle.standardError.write(Data("用法：QuotaGrove --render-leaf-frames <from-percent> <to-percent> <directory> [--expanded] [--manual-burst]\n".utf8))
         exit(64)
     }
 
@@ -70,6 +70,7 @@ private func renderLeafFrames(arguments: [String]) -> Never {
             from: startPercent,
             to: endPercent,
             expanded: arguments.contains("--expanded"),
+            manualBurst: arguments.contains("--manual-burst"),
             to: directory
         )
         print(directory.path)

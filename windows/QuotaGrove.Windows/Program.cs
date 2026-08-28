@@ -16,14 +16,20 @@ internal static class Program
         var application = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
         if (args.Contains("--smoke-test", StringComparer.OrdinalIgnoreCase))
         {
-            return RunPreview(application, 54, Path.Combine(Path.GetTempPath(), $"quota-grove-smoke-{Guid.NewGuid():N}.png"), expanded: false, deleteAfter: true);
+            return RunPreview(application, 54, Path.Combine(Path.GetTempPath(), $"quota-grove-smoke-{Guid.NewGuid():N}.png"), expanded: false, leafBurst: false, deleteAfter: true);
         }
 
         var previewIndex = Array.FindIndex(args, value => value.Equals("--render-preview", StringComparison.OrdinalIgnoreCase));
         if (previewIndex >= 0 && args.Length > previewIndex + 2 &&
             double.TryParse(args[previewIndex + 1], System.Globalization.CultureInfo.InvariantCulture, out var previewPercent))
         {
-            return RunPreview(application, previewPercent, args[previewIndex + 2], args.Contains("--expanded", StringComparer.OrdinalIgnoreCase), deleteAfter: false);
+            return RunPreview(
+                application,
+                previewPercent,
+                args[previewIndex + 2],
+                args.Contains("--expanded", StringComparer.OrdinalIgnoreCase),
+                args.Contains("--leaf-burst", StringComparer.OrdinalIgnoreCase),
+                deleteAfter: false);
         }
 
         using var mutex = new Mutex(initiallyOwned: true, "Local\\Ayang.QuotaGrove.Windows", out var createdNew);
@@ -94,7 +100,7 @@ internal static class Program
         CultureInfo.CurrentUICulture = culture;
     }
 
-    private static int RunPreview(Application application, double percent, string path, bool expanded, bool deleteAfter)
+    private static int RunPreview(Application application, double percent, string path, bool expanded, bool leafBurst, bool deleteAfter)
     {
         var exitCode = 0;
         application.Startup += (_, _) =>
@@ -110,20 +116,38 @@ internal static class Program
                 window.SetExpandedForPreview(expanded);
                 window.ContentRendered += (_, _) =>
                 {
-                    try
+                    void SaveAndClose()
                     {
-                        window.SavePreview(path);
-                        if (deleteAfter) File.Delete(path);
+                        try
+                        {
+                            window.SavePreview(path);
+                            if (deleteAfter) File.Delete(path);
+                        }
+                        catch
+                        {
+                            exitCode = 1;
+                        }
+                        finally
+                        {
+                            window.Close();
+                            application.Shutdown(exitCode);
+                        }
                     }
-                    catch
+
+                    if (!leafBurst)
                     {
-                        exitCode = 1;
+                        SaveAndClose();
+                        return;
                     }
-                    finally
+
+                    window.PlayLeafBurstForPreview();
+                    var previewTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(900) };
+                    previewTimer.Tick += (_, _) =>
                     {
-                        window.Close();
-                        application.Shutdown(exitCode);
-                    }
+                        previewTimer.Stop();
+                        SaveAndClose();
+                    };
+                    previewTimer.Start();
                 };
                 window.Show();
             }

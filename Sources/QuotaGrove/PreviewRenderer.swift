@@ -26,6 +26,7 @@ enum PreviewRenderer {
         from startPercent: Double,
         to endPercent: Double,
         expanded: Bool,
+        manualBurst: Bool = false,
         framesPerSecond: Int = 30,
         duration: TimeInterval = 4,
         to directory: URL
@@ -37,7 +38,11 @@ enum PreviewRenderer {
         let view = QuotaCardView(frame: NSRect(origin: .zero, size: size))
         view.isExpanded = expanded
         view.snapshot = .demo(remainingPercent: startPercent)
-        view.snapshot = .demo(remainingPercent: endPercent)
+        if manualBurst {
+            view.emitManualLeafBurstForPreview()
+        } else {
+            view.snapshot = .demo(remainingPercent: endPercent)
+        }
         view.layoutSubtreeIfNeeded()
 
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)

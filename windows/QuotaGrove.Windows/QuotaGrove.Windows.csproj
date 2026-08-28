@@ -18,6 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="../QuotaGrove.Core/QuotaGrove.Core.csproj" />
     <Resource Include="../../Assets/CodexIcon.png" Link="Assets/CodexIcon.png" />
+    <Resource Include="../../Assets/Leaves/*.png" Link="Assets/Leaves/%(Filename)%(Extension)" />
     <Resource Include="../../bg/背景百分之50以上.png" Link="Assets/forest.png" />
     <Resource Include="../../bg/背景百分之50以下.png" Link="Assets/autumn.png" />
     <Resource Include="../../bg/背景百分之20以下.png" Link="Assets/apocalypse.png" />

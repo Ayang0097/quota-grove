@@ -101,6 +101,12 @@ enum SelfTestRunner {
         largeDrop.emit(forPercentageDrop: 100, in: CGSize(width: 200, height: 80))
         expect(largeDrop.leaves.count == 32, "大幅跳变应限制同时动画密度", report: &report)
 
+        var manualBurst = LeafParticleSystem()
+        manualBurst.emitManualBurst(in: CGSize(width: 200, height: 80))
+        expect(manualBurst.leaves.count == 48, "双击卡片应生成 48 片大量落叶", report: &report)
+        expect(manualBurst.leaves.contains { $0.position.x < 60 }, "双击落叶应覆盖卡片左侧和中部", report: &report)
+        expect(manualBurst.leaves.filter { $0.focus == .crisp }.count == 12, "双击落叶应保留 12 片清晰叶片", report: &report)
+
         return report
     }
 

@@ -137,6 +137,7 @@ final class QuotaCardView: NSView {
 
         if event.clickCount >= 2 {
             pendingSingleClick?.cancel()
+            playManualLeafBurst()
             delegate?.cardViewDidDoubleClick(self)
             return
         }
@@ -167,6 +168,11 @@ final class QuotaCardView: NSView {
 
     func advanceLeafAnimationForPreview(by deltaTime: TimeInterval) {
         leafParticles.advance(by: deltaTime)
+        needsDisplay = true
+    }
+
+    func emitManualLeafBurstForPreview() {
+        leafParticles.emitManualBurst(in: bounds.size)
         needsDisplay = true
     }
 
@@ -281,6 +287,17 @@ final class QuotaCardView: NSView {
     private func emitFallingLeaves(forPercentageDrop drop: Int) {
         guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
         leafParticles.emit(forPercentageDrop: drop, in: bounds.size)
+        startLeafAnimationIfNeeded()
+    }
+
+    private func playManualLeafBurst() {
+        guard !isStashed, snapshot != nil else { return }
+        guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
+        leafParticles.emitManualBurst(in: bounds.size)
+        startLeafAnimationIfNeeded()
+    }
+
+    private func startLeafAnimationIfNeeded() {
         guard leafAnimationTimer == nil else { return }
 
         previousLeafTick = ProcessInfo.processInfo.systemUptime
