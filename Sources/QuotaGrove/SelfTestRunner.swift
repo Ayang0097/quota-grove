@@ -104,8 +104,10 @@ enum SelfTestRunner {
         var manualBurst = LeafParticleSystem()
         manualBurst.emitManualBurst(in: CGSize(width: 200, height: 80))
         expect(manualBurst.leaves.count == 48, "双击卡片应生成 48 片大量落叶", report: &report)
+        expect(LeafParticleSystem.manualBurstWaveCounts == [4, 10, 19, 10, 5], "双击落叶应按先少后多再少的密度落下", report: &report)
         expect(manualBurst.leaves.contains { $0.position.x < 60 }, "双击落叶应覆盖卡片左侧和中部", report: &report)
         expect(manualBurst.leaves.filter { $0.focus == .crisp }.count == 12, "双击落叶应保留 12 片清晰叶片", report: &report)
+        expect(manualBurst.leaves.allSatisfy { $0.verticalAcceleration >= 34 }, "双击落叶应具有自然重力加速度", report: &report)
 
         return report
     }

@@ -11,6 +11,8 @@ namespace QuotaGrove.Windows;
 internal sealed class LeafBurstAnimator : IDisposable
 {
     public const int BurstLeafCount = 48;
+    private static readonly int[] BurstWaveCounts = [4, 10, 19, 10, 5];
+    private static readonly double[] BurstWaveStartDelays = [0, 0.18, 0.38, 0.66, 0.94];
 
     private readonly Canvas _layer;
     private readonly DispatcherTimer _timer;
@@ -38,44 +40,50 @@ internal sealed class LeafBurstAnimator : IDisposable
         Clear();
         _layerHeight = height;
         var generated = new List<LeafVisual>(BurstLeafCount);
-        for (var index = 0; index < BurstLeafCount; index++)
+        var index = 0;
+        var gravityBase = Math.Clamp(height / 2.4, 42, 64);
+        for (var wave = 0; wave < BurstWaveCounts.Length; wave++)
         {
-            var wave = index / 12;
-            var waveIndex = index % 12;
-            var depth = NextDouble(0.14, 0.98);
-            var size = NextDouble(12, 23) * (0.78 + depth * 0.28);
-            var focus = index % 4;
-            var image = new Image
+            for (var waveIndex = 0; waveIndex < BurstWaveCounts[wave]; waveIndex++)
             {
-                Source = LoadSprite(theme, _random.Next(1, 4)),
-                Width = size,
-                Height = size,
-                Opacity = 0,
-                Stretch = Stretch.Uniform,
-                IsHitTestVisible = false,
-                RenderTransformOrigin = new Point(0.5, 0.5)
-            };
-            if (focus != 0)
-            {
-                image.Effect = new BlurEffect { Radius = focus == 1 ? 0.8 : 1.7 };
-            }
+                var depth = NextDouble(0.14, 0.98);
+                var size = NextDouble(12, 23) * (0.78 + depth * 0.28);
+                var focus = index % 4;
+                var image = new Image
+                {
+                    Source = LoadSprite(theme, _random.Next(1, 4)),
+                    Width = size,
+                    Height = size,
+                    Opacity = 0,
+                    Stretch = Stretch.Uniform,
+                    IsHitTestVisible = false,
+                    RenderTransformOrigin = new Point(0.5, 0.5)
+                };
+                if (focus != 0)
+                {
+                    image.Effect = new BlurEffect { Radius = focus == 1 ? 0.8 : 1.7 };
+                }
 
-            generated.Add(new LeafVisual
-            {
-                Image = image,
-                X = NextDouble(width * 0.05, width * 1.05),
-                Y = -size - NextDouble(-4, height * 0.3),
-                VelocityX = NextDouble(-24, 11) * (0.84 + depth * 0.28),
-                VelocityY = NextDouble(62, 94) * (0.8 + depth * 0.36),
-                SwayPhase = NextDouble(0, Math.PI * 2),
-                SwaySpeed = NextDouble(1.6, 3.4),
-                SwayAmplitude = NextDouble(2.4, 8.2) * (0.7 + depth * 0.38),
-                Rotation = NextDouble(-72, 72),
-                AngularVelocity = NextDouble(-96, 96) * (0.74 + depth * 0.38),
-                Depth = depth,
-                Age = -(wave * 0.18 + waveIndex * 0.035 + NextDouble(0, 0.16)),
-                Lifetime = NextDouble(2.8, 4.0)
-            });
+                generated.Add(new LeafVisual
+                {
+                    Image = image,
+                    X = NextDouble(width * 0.05, width * 1.05),
+                    Y = -size - NextDouble(-4, height * 0.23),
+                    VelocityX = NextDouble(-22, 10) * (0.84 + depth * 0.28),
+                    VelocityY = NextDouble(8, 18) * (0.82 + depth * 0.28),
+                    Gravity = NextDouble(gravityBase, gravityBase + 18) * (0.82 + depth * 0.28),
+                    HorizontalDrag = NextDouble(0.18, 0.34),
+                    SwayPhase = NextDouble(0, Math.PI * 2),
+                    SwaySpeed = NextDouble(1.6, 3.4),
+                    SwayAmplitude = NextDouble(2.4, 8.2) * (0.7 + depth * 0.38),
+                    Rotation = NextDouble(-72, 72),
+                    AngularVelocity = NextDouble(-96, 96) * (0.74 + depth * 0.38),
+                    Depth = depth,
+                    Age = -(BurstWaveStartDelays[wave] + waveIndex * 0.012 + NextDouble(0, 0.12)),
+                    Lifetime = NextDouble(3.0, 4.2)
+                });
+                index++;
+            }
         }
 
         foreach (var leaf in generated.OrderBy(leaf => leaf.Depth))
@@ -118,6 +126,8 @@ internal sealed class LeafBurstAnimator : IDisposable
                 continue;
             }
 
+            leaf.VelocityY += leaf.Gravity * delta;
+            leaf.VelocityX *= Math.Max(0, 1 - leaf.HorizontalDrag * delta);
             leaf.X += leaf.VelocityX * delta;
             leaf.Y += leaf.VelocityY * delta;
             leaf.SwayPhase += leaf.SwaySpeed * delta;
@@ -164,8 +174,10 @@ internal sealed class LeafBurstAnimator : IDisposable
         public required Image Image { get; init; }
         public double X { get; set; }
         public double Y { get; set; }
-        public double VelocityX { get; init; }
-        public double VelocityY { get; init; }
+        public double VelocityX { get; set; }
+        public double VelocityY { get; set; }
+        public double Gravity { get; init; }
+        public double HorizontalDrag { get; init; }
         public double SwayPhase { get; set; }
         public double SwaySpeed { get; init; }
         public double SwayAmplitude { get; init; }
