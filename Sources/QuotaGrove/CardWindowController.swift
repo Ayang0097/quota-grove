@@ -1,4 +1,5 @@
 import AppKit
+import UniformTypeIdentifiers
 
 final class CardWindowController: NSWindowController, QuotaCardViewDelegate {
     static let cardWidth: CGFloat = 200
@@ -179,6 +180,32 @@ final class CardWindowController: NSWindowController, QuotaCardViewDelegate {
         }
 
         menu.addItem(.separator())
+        let backgroundSetItem = NSMenuItem(title: AppText.backgroundStyle, action: nil, keyEquivalent: "")
+        let backgroundSetMenu = NSMenu(title: AppText.backgroundStyle)
+        for style in CardBackgroundStyle.builtInStyles {
+            let title: String
+            switch style {
+            case .quotaGrove: title = AppText.quotaGroveStyle
+            case .astralTerrarium: title = AppText.astralTerrariumStyle
+            case .cloudseaBeacon: title = AppText.cloudseaBeaconStyle
+            case .moonlitConservatory: title = AppText.moonlitConservatoryStyle
+            case .abyssalReverie: title = AppText.abyssalReverieStyle
+            case .custom: continue
+            }
+            let item = NSMenuItem(title: title, action: #selector(selectBackgroundStyle(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = style.rawValue
+            item.state = ThemeBackgroundStore.shared.selectedStyle == style ? .on : .off
+            backgroundSetMenu.addItem(item)
+        }
+        menu.addItem(backgroundSetItem)
+        menu.setSubmenu(backgroundSetMenu, for: backgroundSetItem)
+        menu.addItem(withTitle: AppText.customizeBackground, action: #selector(chooseCustomBackground), keyEquivalent: "").target = self
+        let restoreBackgroundItem = menu.addItem(withTitle: AppText.restoreDefaultBackground, action: #selector(restoreDefaultBackground), keyEquivalent: "")
+        restoreBackgroundItem.target = self
+        restoreBackgroundItem.isEnabled = ThemeBackgroundStore.shared.hasCustomBackground
+            || ThemeBackgroundStore.shared.selectedStyle != .quotaGrove
+        menu.addItem(.separator())
         menu.addItem(withTitle: AppText.resetCardPosition, action: #selector(resetPosition), keyEquivalent: "").target = self
         menu.addItem(withTitle: AppText.aboutAndPrivacy, action: #selector(showAbout), keyEquivalent: "").target = self
         menu.addItem(.separator())
@@ -200,6 +227,44 @@ final class CardWindowController: NSWindowController, QuotaCardViewDelegate {
 
     @objc private func toggleWeatherLink() {
         onWeatherLinkToggle?(!weatherLinkEnabled)
+    }
+
+    @objc private func selectBackgroundStyle(_ sender: NSMenuItem) {
+        guard
+            let rawValue = sender.representedObject as? String,
+            let style = CardBackgroundStyle(rawValue: rawValue),
+            CardBackgroundStyle.builtInStyles.contains(style)
+        else { return }
+        ThemeBackgroundStore.shared.selectBuiltInStyle(style)
+        cardView.backgroundStyleDidChange()
+    }
+
+    @objc private func chooseCustomBackground() {
+        NSApp.activate(ignoringOtherApps: true)
+        let openPanel = NSOpenPanel()
+        openPanel.title = AppText.chooseBackgroundTitle
+        openPanel.prompt = AppText.chooseBackgroundPrompt
+        openPanel.allowedContentTypes = [.image]
+        openPanel.allowsMultipleSelection = false
+        openPanel.canChooseDirectories = false
+        openPanel.canChooseFiles = true
+
+        guard openPanel.runModal() == .OK, let sourceURL = openPanel.url else { return }
+        do {
+            try ThemeBackgroundStore.shared.installCustomBackground(from: sourceURL)
+            cardView.backgroundStyleDidChange()
+        } catch {
+            presentAlert(title: AppText.customBackgroundFailed, message: error.localizedDescription)
+        }
+    }
+
+    @objc private func restoreDefaultBackground() {
+        do {
+            try ThemeBackgroundStore.shared.restoreDefaultBackground()
+            cardView.backgroundStyleDidChange()
+        } catch {
+            presentAlert(title: AppText.customBackgroundFailed, message: error.localizedDescription)
+        }
     }
 
     @objc private func resetPosition() {

@@ -8,11 +8,11 @@ enum QuotaTheme: String, CaseIterable, Codable {
 
     static func select(for remainingPercent: Double) -> QuotaTheme {
         switch remainingPercent {
-        case 50...100:
+        case 70...100:
             return .forest
-        case 20..<50:
+        case 40..<70:
             return .autumn
-        case 3..<20:
+        case 10..<40:
             return .apocalypse
         default:
             return .wasteland

@@ -19,6 +19,10 @@ cp "$project_root/Support/Info.plist" "$app_dir/Contents/Info.plist"
 cp "$project_root/Assets/CodexIcon.png" "$app_dir/Contents/Resources/CodexIcon.png"
 mkdir -p "$app_dir/Contents/Resources/Backgrounds"
 cp "$project_root"/bg/*.png "$app_dir/Contents/Resources/Backgrounds/"
+for background_set in AstralTerrarium CloudseaBeacon MoonlitConservatory AbyssalReverie; do
+  mkdir -p "$app_dir/Contents/Resources/BackgroundSets/$background_set"
+  cp "$project_root"/Assets/BackgroundSets/$background_set/*.png "$app_dir/Contents/Resources/BackgroundSets/$background_set/"
+done
 mkdir -p "$app_dir/Contents/Resources/Leaves"
 for theme in forest autumn apocalypse wasteland; do
   cp "$project_root"/Assets/Leaves/$theme-*.png "$app_dir/Contents/Resources/Leaves/"

@@ -26,7 +26,7 @@ final class QuotaCardView: NSView {
         didSet {
             if let previous = oldValue, let current = snapshot {
                 let percentageDrop = previous.roundedRemaining - current.roundedRemaining
-                if percentageDrop > 0 { emitFallingLeaves(forPercentageDrop: percentageDrop) }
+                if percentageDrop > 0 { emitThemeParticles(forPercentageDrop: percentageDrop) }
             }
             updateAccessibility()
             updateRainAnimationState()
@@ -64,6 +64,10 @@ final class QuotaCardView: NSView {
     private var pendingSingleClick: DispatchWorkItem?
     private var hoverTrackingArea: NSTrackingArea?
     private var leafParticles = LeafParticleSystem()
+    private var astralParticles = AstralParticleSystem()
+    private var beaconParticles = BeaconParticleSystem()
+    private var moonButterflies = MoonButterflySystem()
+    private var abyssalJellyfish = AbyssalJellyfishSystem()
     private let rainEffectView = RainEffectView(frame: .zero)
     private let snowEffectView = SnowEffectView(frame: .zero)
     private var weatherRainRequested = false
@@ -185,12 +189,38 @@ final class QuotaCardView: NSView {
 
     func advanceLeafAnimationForPreview(by deltaTime: TimeInterval) {
         leafParticles.advance(by: deltaTime)
+        astralParticles.advance(by: deltaTime)
+        beaconParticles.advance(by: deltaTime)
+        moonButterflies.advance(by: deltaTime)
+        abyssalJellyfish.advance(by: deltaTime)
         needsDisplay = true
     }
 
     func emitManualLeafBurstForPreview() {
-        leafParticles.emitManualBurst(in: bounds.size)
+        if ThemeBackgroundStore.shared.usesAstralEffects {
+            astralParticles.emitManualBurst(for: currentTheme, in: bounds.size)
+        } else if ThemeBackgroundStore.shared.usesBeaconEffects {
+            beaconParticles.emitManualBurst(for: currentTheme, in: bounds.size)
+        } else if ThemeBackgroundStore.shared.usesMoonlitEffects {
+            moonButterflies.emitManualBurst(for: currentTheme, in: bounds.size)
+        } else if ThemeBackgroundStore.shared.usesAbyssalEffects {
+            abyssalJellyfish.emitManualBurst(for: currentTheme, in: bounds.size)
+        } else {
+            leafParticles.emitManualBurst(in: bounds.size)
+        }
         needsDisplay = true
+    }
+
+    func backgroundStyleDidChange() {
+        leafParticles.removeAll()
+        astralParticles.removeAll()
+        beaconParticles.removeAll()
+        moonButterflies.removeAll()
+        abyssalJellyfish.removeAll()
+        leafAnimationTimer?.invalidate()
+        leafAnimationTimer = nil
+        needsDisplay = true
+        displayIfNeeded()
     }
 
     func setRainPreviewActive(_ active: Bool) {
@@ -273,8 +303,33 @@ final class QuotaCardView: NSView {
     private func playAmbientLeafAnimationIfPossible() {
         guard snapshot != nil else { return }
         guard !weatherRainRequested, !snowEffectRequested else { return }
-        guard window?.isVisible == true, !isStashed, leafParticles.isEmpty else { return }
-        emitFallingLeaves(forPercentageDrop: 1)
+        guard window?.isVisible == true,
+              !isStashed,
+              leafParticles.isEmpty,
+              astralParticles.isEmpty,
+              beaconParticles.isEmpty,
+              moonButterflies.isEmpty,
+              abyssalJellyfish.isEmpty
+        else { return }
+        if ThemeBackgroundStore.shared.usesAstralEffects {
+            guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
+            astralParticles.emitAmbient(for: currentTheme, in: bounds.size)
+            startLeafAnimationIfNeeded()
+        } else if ThemeBackgroundStore.shared.usesBeaconEffects {
+            guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
+            beaconParticles.emitAmbient(for: currentTheme, in: bounds.size)
+            startLeafAnimationIfNeeded()
+        } else if ThemeBackgroundStore.shared.usesMoonlitEffects {
+            guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
+            moonButterflies.emitAmbient(for: currentTheme, in: bounds.size)
+            startLeafAnimationIfNeeded()
+        } else if ThemeBackgroundStore.shared.usesAbyssalEffects {
+            guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
+            abyssalJellyfish.emitAmbient(for: currentTheme, in: bounds.size)
+            startLeafAnimationIfNeeded()
+        } else {
+            emitThemeParticles(forPercentageDrop: 1)
+        }
     }
 
     private func drawStashedBar() {
@@ -354,6 +409,10 @@ final class QuotaCardView: NSView {
         drawEnvironment(in: bounds)
         drawReadabilityOverlay(in: bounds)
         drawFallingLeaves()
+        drawAstralMotes()
+        drawBeaconBirds()
+        drawMoonButterflies()
+        drawAbyssalJellyfish()
         NSGraphicsContext.restoreGraphicsState()
 
         currentBorderColor.setStroke()
@@ -364,16 +423,36 @@ final class QuotaCardView: NSView {
         if isExpanded { drawDetails() }
     }
 
-    private func emitFallingLeaves(forPercentageDrop drop: Int) {
+    private func emitThemeParticles(forPercentageDrop drop: Int) {
         guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
-        leafParticles.emit(forPercentageDrop: drop, in: bounds.size)
+        if ThemeBackgroundStore.shared.usesAstralEffects {
+            astralParticles.emit(forPercentageDrop: drop, theme: currentTheme, in: bounds.size)
+        } else if ThemeBackgroundStore.shared.usesBeaconEffects {
+            beaconParticles.emit(forPercentageDrop: drop, theme: currentTheme, in: bounds.size)
+        } else if ThemeBackgroundStore.shared.usesMoonlitEffects {
+            moonButterflies.emit(forPercentageDrop: drop, theme: currentTheme, in: bounds.size)
+        } else if ThemeBackgroundStore.shared.usesAbyssalEffects {
+            abyssalJellyfish.emit(forPercentageDrop: drop, theme: currentTheme, in: bounds.size)
+        } else {
+            leafParticles.emit(forPercentageDrop: drop, in: bounds.size)
+        }
         startLeafAnimationIfNeeded()
     }
 
     private func playManualLeafBurst() {
         guard !isStashed, snapshot != nil else { return }
         guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
-        leafParticles.emitManualBurst(in: bounds.size)
+        if ThemeBackgroundStore.shared.usesAstralEffects {
+            astralParticles.emitManualBurst(for: currentTheme, in: bounds.size)
+        } else if ThemeBackgroundStore.shared.usesBeaconEffects {
+            beaconParticles.emitManualBurst(for: currentTheme, in: bounds.size)
+        } else if ThemeBackgroundStore.shared.usesMoonlitEffects {
+            moonButterflies.emitManualBurst(for: currentTheme, in: bounds.size)
+        } else if ThemeBackgroundStore.shared.usesAbyssalEffects {
+            abyssalJellyfish.emitManualBurst(for: currentTheme, in: bounds.size)
+        } else {
+            leafParticles.emitManualBurst(in: bounds.size)
+        }
         startLeafAnimationIfNeeded()
     }
 
@@ -385,9 +464,17 @@ final class QuotaCardView: NSView {
             guard let self else { return }
             let now = ProcessInfo.processInfo.systemUptime
             self.leafParticles.advance(by: now - self.previousLeafTick)
+            self.astralParticles.advance(by: now - self.previousLeafTick)
+            self.beaconParticles.advance(by: now - self.previousLeafTick)
+            self.moonButterflies.advance(by: now - self.previousLeafTick)
+            self.abyssalJellyfish.advance(by: now - self.previousLeafTick)
             self.previousLeafTick = now
             self.needsDisplay = true
-            if self.leafParticles.isEmpty {
+            if self.leafParticles.isEmpty,
+               self.astralParticles.isEmpty,
+               self.beaconParticles.isEmpty,
+               self.moonButterflies.isEmpty,
+               self.abyssalJellyfish.isEmpty {
                 self.leafAnimationTimer?.invalidate()
                 self.leafAnimationTimer = nil
             }
@@ -535,6 +622,488 @@ final class QuotaCardView: NSView {
                 rimLight.lineCapStyle = .round
                 rimLight.stroke()
             }
+            NSGraphicsContext.restoreGraphicsState()
+        }
+    }
+
+    private func drawAstralMotes() {
+        guard !astralParticles.isEmpty else { return }
+        let visibleMotes = astralParticles.motes
+            .filter(\.isVisible)
+            .sorted { $0.depth < $1.depth }
+
+        for mote in visibleMotes {
+            let point = mote.renderedPosition
+            let opacity = mote.opacity * (0.4 + mote.depth * 0.6)
+            let size = mote.size
+            NSGraphicsContext.saveGraphicsState()
+            let transform = NSAffineTransform()
+            transform.translateX(by: point.x, yBy: point.y)
+            transform.rotate(byDegrees: mote.rotation)
+            transform.concat()
+
+            switch mote.kind {
+            case .spore:
+                let color = NSColor(calibratedRed: 0.38, green: 0.95, blue: 0.76, alpha: 1)
+                color.withAlphaComponent(0.1 * opacity).setFill()
+                NSBezierPath(ovalIn: NSRect(x: -size * 1.9, y: -size * 1.9, width: size * 3.8, height: size * 3.8)).fill()
+                color.withAlphaComponent(0.88 * opacity).setFill()
+                NSBezierPath(ovalIn: NSRect(x: -size * 0.5, y: -size * 0.5, width: size, height: size)).fill()
+                NSColor.white.withAlphaComponent(0.68 * opacity).setFill()
+                NSBezierPath(ovalIn: NSRect(x: -size * 0.18, y: 0, width: size * 0.34, height: size * 0.34)).fill()
+
+            case .stardust:
+                let color = NSColor(calibratedRed: 1, green: 0.69, blue: 0.25, alpha: 1)
+                color.withAlphaComponent(0.1 * opacity).setFill()
+                NSBezierPath(ovalIn: NSRect(x: -size * 1.5, y: -size * 1.5, width: size * 3, height: size * 3)).fill()
+                let diamond = NSBezierPath()
+                diamond.move(to: NSPoint(x: 0, y: size))
+                diamond.line(to: NSPoint(x: size * 0.46, y: 0))
+                diamond.line(to: NSPoint(x: 0, y: -size))
+                diamond.line(to: NSPoint(x: -size * 0.46, y: 0))
+                diamond.close()
+                color.withAlphaComponent(0.86 * opacity).setFill()
+                diamond.fill()
+                NSColor(calibratedWhite: 1, alpha: 0.48 * opacity).setStroke()
+                let cross = NSBezierPath()
+                cross.move(to: NSPoint(x: -size * 0.75, y: 0))
+                cross.line(to: NSPoint(x: size * 0.75, y: 0))
+                cross.lineWidth = 0.35
+                cross.stroke()
+
+            case .ember:
+                let color = NSColor(calibratedRed: 1, green: 0.24, blue: 0.18, alpha: 1)
+                color.withAlphaComponent(0.1 * opacity).setFill()
+                NSBezierPath(ovalIn: NSRect(x: -size * 1.6, y: -size * 2.1, width: size * 3.2, height: size * 4.2)).fill()
+                let tail = NSBezierPath()
+                tail.move(to: NSPoint(x: 0, y: -size * 2.2))
+                tail.line(to: NSPoint(x: 0, y: size * 0.75))
+                tail.lineCapStyle = .round
+                tail.lineWidth = max(0.45, size * 0.28)
+                color.withAlphaComponent(0.72 * opacity).setStroke()
+                tail.stroke()
+                NSColor(calibratedRed: 1, green: 0.72, blue: 0.4, alpha: 0.9 * opacity).setFill()
+                NSBezierPath(ovalIn: NSRect(x: -size * 0.32, y: -size * 0.32, width: size * 0.64, height: size * 0.64)).fill()
+
+            case .frost:
+                let color = NSColor(calibratedRed: 0.76, green: 0.88, blue: 0.96, alpha: 1)
+                color.withAlphaComponent(0.08 * opacity).setFill()
+                NSBezierPath(ovalIn: NSRect(x: -size * 1.6, y: -size * 1.6, width: size * 3.2, height: size * 3.2)).fill()
+                color.withAlphaComponent(0.78 * opacity).setStroke()
+                for arm in 0..<6 {
+                    let angle = CGFloat(arm) * .pi / 3
+                    let direction = NSPoint(x: cos(angle), y: sin(angle))
+                    let crystal = NSBezierPath()
+                    crystal.move(to: .zero)
+                    crystal.line(to: NSPoint(x: direction.x * size, y: direction.y * size))
+                    crystal.lineCapStyle = .round
+                    crystal.lineWidth = 0.42 + mote.depth * 0.28
+                    crystal.stroke()
+                }
+                NSColor.white.withAlphaComponent(0.72 * opacity).setFill()
+                NSBezierPath(ovalIn: NSRect(x: -0.6, y: -0.6, width: 1.2, height: 1.2)).fill()
+            }
+
+            NSGraphicsContext.restoreGraphicsState()
+        }
+    }
+
+    private func drawBeaconBirds() {
+        guard !beaconParticles.isEmpty else { return }
+        let visibleBirds = beaconParticles.birds
+            .filter(\.isVisible)
+            .sorted { $0.depth < $1.depth }
+
+        for bird in visibleBirds {
+            let point = bird.renderedPosition
+            let opacity = bird.opacity * (0.42 + bird.depth * 0.58)
+            let size = bird.size
+            NSGraphicsContext.saveGraphicsState()
+            let transform = NSAffineTransform()
+            transform.translateX(by: point.x, yBy: point.y)
+            transform.rotate(byDegrees: bird.bank)
+            transform.concat()
+
+            let color: NSColor
+            let coreColor: NSColor
+            switch bird.kind {
+            case .azure:
+                color = NSColor(calibratedRed: 0.52, green: 0.9, blue: 1, alpha: 1)
+                coreColor = NSColor(calibratedRed: 0.12, green: 0.32, blue: 0.43, alpha: 1)
+            case .golden:
+                color = NSColor(calibratedRed: 1, green: 0.66, blue: 0.18, alpha: 1)
+                coreColor = NSColor(calibratedRed: 0.35, green: 0.2, blue: 0.06, alpha: 1)
+            case .storm:
+                color = NSColor(calibratedRed: 1, green: 0.28, blue: 0.44, alpha: 1)
+                coreColor = NSColor(calibratedRed: 0.19, green: 0.04, blue: 0.09, alpha: 1)
+            case .frost:
+                color = NSColor(calibratedWhite: 0.94, alpha: 1)
+                coreColor = NSColor(calibratedWhite: 0.18, alpha: 1)
+            }
+
+            let wingTipY = bird.wingLift * size * 0.52
+            let wingRootY = -size * 0.08
+            let wings = NSBezierPath()
+            wings.move(to: NSPoint(x: -size * 0.04, y: wingRootY))
+            wings.curve(
+                to: NSPoint(x: -size, y: wingTipY),
+                controlPoint1: NSPoint(x: -size * 0.3, y: size * 0.2),
+                controlPoint2: NSPoint(x: -size * 0.72, y: wingTipY + size * 0.12)
+            )
+            wings.move(to: NSPoint(x: size * 0.04, y: wingRootY))
+            wings.curve(
+                to: NSPoint(x: size, y: wingTipY),
+                controlPoint1: NSPoint(x: size * 0.3, y: size * 0.2),
+                controlPoint2: NSPoint(x: size * 0.72, y: wingTipY + size * 0.12)
+            )
+            wings.lineCapStyle = .round
+
+            color.withAlphaComponent(0.1 * opacity).setStroke()
+            wings.lineWidth = 2.4 + bird.depth * 1.1
+            wings.stroke()
+            coreColor.withAlphaComponent(0.78 * opacity).setStroke()
+            wings.lineWidth = 0.66 + bird.depth * 0.58
+            wings.stroke()
+            color.withAlphaComponent(0.82 * opacity).setStroke()
+            wings.lineWidth = 0.28 + bird.depth * 0.2
+            wings.stroke()
+
+            let body = NSBezierPath(
+                ovalIn: NSRect(
+                    x: -size * 0.24,
+                    y: -size * 0.24,
+                    width: size * 0.52,
+                    height: size * 0.34
+                )
+            )
+            coreColor.withAlphaComponent(0.9 * opacity).setFill()
+            body.fill()
+
+            let beak = NSBezierPath()
+            beak.move(to: NSPoint(x: -size * 0.23, y: -size * 0.09))
+            beak.line(to: NSPoint(x: -size * 0.48, y: -size * 0.02))
+            beak.line(to: NSPoint(x: -size * 0.23, y: size * 0.02))
+            beak.close()
+            color.withAlphaComponent(0.82 * opacity).setFill()
+            beak.fill()
+
+            NSGraphicsContext.restoreGraphicsState()
+        }
+    }
+
+    private func drawMoonButterflies() {
+        guard !moonButterflies.isEmpty else { return }
+        let visibleButterflies = moonButterflies.butterflies
+            .filter(\.isVisible)
+            .sorted { $0.depth < $1.depth }
+
+        for butterfly in visibleButterflies {
+            let point = butterfly.renderedPosition
+            let opacity = butterfly.opacity * (0.4 + butterfly.depth * 0.6)
+            let size = butterfly.size
+            let spread = butterfly.wingSpread
+            NSGraphicsContext.saveGraphicsState()
+            let transform = NSAffineTransform()
+            transform.translateX(by: point.x, yBy: point.y)
+            transform.rotate(byDegrees: butterfly.rotation)
+            transform.concat()
+
+            let wingColor: NSColor
+            let highlightColor: NSColor
+            let bodyColor: NSColor
+            switch butterfly.kind {
+            case .pearl:
+                wingColor = NSColor(calibratedRed: 0.96, green: 0.69, blue: 0.86, alpha: 1)
+                highlightColor = NSColor(calibratedRed: 0.96, green: 0.9, blue: 1, alpha: 1)
+                bodyColor = NSColor(calibratedRed: 0.25, green: 0.12, blue: 0.29, alpha: 1)
+            case .roseGold:
+                wingColor = NSColor(calibratedRed: 0.92, green: 0.49, blue: 0.42, alpha: 1)
+                highlightColor = NSColor(calibratedRed: 1, green: 0.79, blue: 0.68, alpha: 1)
+                bodyColor = NSColor(calibratedRed: 0.28, green: 0.12, blue: 0.16, alpha: 1)
+            case .garnet:
+                wingColor = NSColor(calibratedRed: 0.78, green: 0.08, blue: 0.3, alpha: 1)
+                highlightColor = NSColor(calibratedRed: 1, green: 0.38, blue: 0.58, alpha: 1)
+                bodyColor = NSColor(calibratedRed: 0.12, green: 0.02, blue: 0.08, alpha: 1)
+            case .silver:
+                wingColor = NSColor(calibratedWhite: 0.32, alpha: 1)
+                highlightColor = NSColor(calibratedRed: 0.92, green: 0.92, blue: 1, alpha: 1)
+                bodyColor = NSColor(calibratedWhite: 0.14, alpha: 1)
+            }
+
+            let upperWings = NSBezierPath()
+            upperWings.move(to: NSPoint(x: -size * 0.04, y: size * 0.04))
+            upperWings.curve(
+                to: NSPoint(x: -size * spread, y: size * 0.72),
+                controlPoint1: NSPoint(x: -size * 0.28, y: size * 0.2),
+                controlPoint2: NSPoint(x: -size * spread * 0.78, y: size * 0.76)
+            )
+            upperWings.curve(
+                to: NSPoint(x: -size * 0.08, y: -size * 0.04),
+                controlPoint1: NSPoint(x: -size * spread * 0.92, y: size * 0.24),
+                controlPoint2: NSPoint(x: -size * 0.28, y: -size * 0.02)
+            )
+            upperWings.close()
+            upperWings.move(to: NSPoint(x: size * 0.04, y: size * 0.04))
+            upperWings.curve(
+                to: NSPoint(x: size * spread, y: size * 0.72),
+                controlPoint1: NSPoint(x: size * 0.28, y: size * 0.2),
+                controlPoint2: NSPoint(x: size * spread * 0.78, y: size * 0.76)
+            )
+            upperWings.curve(
+                to: NSPoint(x: size * 0.08, y: -size * 0.04),
+                controlPoint1: NSPoint(x: size * spread * 0.92, y: size * 0.24),
+                controlPoint2: NSPoint(x: size * 0.28, y: -size * 0.02)
+            )
+            upperWings.close()
+
+            let lowerWings = NSBezierPath()
+            lowerWings.move(to: NSPoint(x: -size * 0.05, y: -size * 0.06))
+            lowerWings.curve(
+                to: NSPoint(x: -size * spread * 0.72, y: -size * 0.52),
+                controlPoint1: NSPoint(x: -size * 0.28, y: -size * 0.12),
+                controlPoint2: NSPoint(x: -size * spread * 0.7, y: -size * 0.48)
+            )
+            lowerWings.curve(
+                to: NSPoint(x: -size * 0.08, y: -size * 0.16),
+                controlPoint1: NSPoint(x: -size * spread * 0.48, y: -size * 0.62),
+                controlPoint2: NSPoint(x: -size * 0.2, y: -size * 0.2)
+            )
+            lowerWings.close()
+            lowerWings.move(to: NSPoint(x: size * 0.05, y: -size * 0.06))
+            lowerWings.curve(
+                to: NSPoint(x: size * spread * 0.72, y: -size * 0.52),
+                controlPoint1: NSPoint(x: size * 0.28, y: -size * 0.12),
+                controlPoint2: NSPoint(x: size * spread * 0.7, y: -size * 0.48)
+            )
+            lowerWings.curve(
+                to: NSPoint(x: size * 0.08, y: -size * 0.16),
+                controlPoint1: NSPoint(x: size * spread * 0.48, y: -size * 0.62),
+                controlPoint2: NSPoint(x: size * 0.2, y: -size * 0.2)
+            )
+            lowerWings.close()
+
+            wingColor.withAlphaComponent(0.12 * opacity).setFill()
+            let glow = NSBezierPath(
+                ovalIn: NSRect(x: -size * 1.3, y: -size, width: size * 2.6, height: size * 2)
+            )
+            glow.fill()
+            wingColor.withAlphaComponent(0.66 * opacity).setFill()
+            upperWings.fill()
+            wingColor.withAlphaComponent(0.48 * opacity).setFill()
+            lowerWings.fill()
+            highlightColor.withAlphaComponent(0.72 * opacity).setStroke()
+            upperWings.lineWidth = 0.34 + butterfly.depth * 0.26
+            upperWings.stroke()
+            lowerWings.lineWidth = 0.28 + butterfly.depth * 0.2
+            lowerWings.stroke()
+
+            highlightColor.withAlphaComponent(0.52 * opacity).setFill()
+            let leftPearl = NSBezierPath(
+                ovalIn: NSRect(
+                    x: -size * spread * 0.58,
+                    y: size * 0.19,
+                    width: size * 0.2,
+                    height: size * 0.2
+                )
+            )
+            leftPearl.fill()
+            let rightPearl = NSBezierPath(
+                ovalIn: NSRect(
+                    x: size * spread * 0.38,
+                    y: size * 0.19,
+                    width: size * 0.2,
+                    height: size * 0.2
+                )
+            )
+            rightPearl.fill()
+
+            bodyColor.withAlphaComponent(0.9 * opacity).setFill()
+            NSBezierPath(
+                ovalIn: NSRect(x: -size * 0.09, y: -size * 0.38, width: size * 0.18, height: size * 0.78)
+            ).fill()
+            NSBezierPath(
+                ovalIn: NSRect(x: -size * 0.11, y: size * 0.29, width: size * 0.22, height: size * 0.22)
+            ).fill()
+
+            let antennae = NSBezierPath()
+            antennae.move(to: NSPoint(x: -size * 0.04, y: size * 0.42))
+            antennae.curve(
+                to: NSPoint(x: -size * 0.28, y: size * 0.72),
+                controlPoint1: NSPoint(x: -size * 0.08, y: size * 0.56),
+                controlPoint2: NSPoint(x: -size * 0.22, y: size * 0.62)
+            )
+            antennae.move(to: NSPoint(x: size * 0.04, y: size * 0.42))
+            antennae.curve(
+                to: NSPoint(x: size * 0.28, y: size * 0.72),
+                controlPoint1: NSPoint(x: size * 0.08, y: size * 0.56),
+                controlPoint2: NSPoint(x: size * 0.22, y: size * 0.62)
+            )
+            antennae.lineCapStyle = .round
+            antennae.lineWidth = 0.28
+            highlightColor.withAlphaComponent(0.56 * opacity).setStroke()
+            antennae.stroke()
+
+            NSGraphicsContext.restoreGraphicsState()
+        }
+    }
+
+    private func drawAbyssalJellyfish() {
+        guard !abyssalJellyfish.isEmpty else { return }
+        let visibleJellyfish = abyssalJellyfish.jellyfish
+            .filter(\.isVisible)
+            .sorted { $0.depth < $1.depth }
+
+        for jellyfish in visibleJellyfish {
+            let point = jellyfish.renderedPosition
+            let opacity = jellyfish.opacity * (0.34 + jellyfish.depth * 0.66)
+            let size = jellyfish.size * jellyfish.distanceScale
+            let bellWidth = size * 1.58
+            let bellHeight = size * 0.82 * jellyfish.bellCompression
+            let tentacleLength = size * (1.45 + jellyfish.depth * 0.42) * jellyfish.tentacleExtension
+
+            let baseColor: NSColor
+            let highlightColor: NSColor
+            let coreColor: NSColor
+            switch jellyfish.kind {
+            case .cyan:
+                baseColor = NSColor(calibratedRed: 0.18, green: 0.78, blue: 0.9, alpha: 1)
+                highlightColor = NSColor(calibratedRed: 0.7, green: 0.96, blue: 1, alpha: 1)
+                coreColor = NSColor(calibratedRed: 0.54, green: 0.45, blue: 0.92, alpha: 1)
+            case .amber:
+                baseColor = NSColor(calibratedRed: 0.88, green: 0.53, blue: 0.25, alpha: 1)
+                highlightColor = NSColor(calibratedRed: 1, green: 0.83, blue: 0.58, alpha: 1)
+                coreColor = NSColor(calibratedRed: 0.72, green: 0.34, blue: 0.34, alpha: 1)
+            case .garnet:
+                baseColor = NSColor(calibratedRed: 0.65, green: 0.08, blue: 0.28, alpha: 1)
+                highlightColor = NSColor(calibratedRed: 0.96, green: 0.3, blue: 0.5, alpha: 1)
+                coreColor = NSColor(calibratedRed: 0.4, green: 0.03, blue: 0.17, alpha: 1)
+            case .silver:
+                baseColor = NSColor(calibratedRed: 0.66, green: 0.72, blue: 0.8, alpha: 1)
+                highlightColor = NSColor(calibratedRed: 0.95, green: 0.97, blue: 1, alpha: 1)
+                coreColor = NSColor(calibratedRed: 0.55, green: 0.6, blue: 0.72, alpha: 1)
+            }
+
+            NSGraphicsContext.saveGraphicsState()
+            let transform = NSAffineTransform()
+            transform.translateX(by: point.x, yBy: point.y)
+            transform.rotate(byDegrees: jellyfish.rotation)
+            transform.concat()
+
+            baseColor.withAlphaComponent(0.09 * opacity).setFill()
+            NSBezierPath(
+                ovalIn: NSRect(
+                    x: -bellWidth * 0.78,
+                    y: -tentacleLength * 0.55,
+                    width: bellWidth * 1.56,
+                    height: tentacleLength * 0.8 + bellHeight * 1.55
+                )
+            ).fill()
+
+            let tentacles = NSBezierPath()
+            tentacles.lineCapStyle = .round
+            for index in 0..<7 {
+                let fraction = CGFloat(index) / 6
+                let startX = -bellWidth * 0.36 + fraction * bellWidth * 0.72
+                let phase = jellyfish.driftPhase * 1.35 + jellyfish.tentaclePhase + CGFloat(index) * 0.74
+                let curl = sin(phase) * size * (0.18 + jellyfish.depth * 0.08)
+                let lowerCurl = cos(phase * 0.83) * size * 0.22
+                let lengthVariation = 0.74 + CGFloat((index * 37) % 5) * 0.06
+                let endY = -tentacleLength * lengthVariation
+                tentacles.move(to: NSPoint(x: startX, y: 0))
+                tentacles.curve(
+                    to: NSPoint(x: startX + lowerCurl, y: endY),
+                    controlPoint1: NSPoint(x: startX + curl, y: endY * 0.32),
+                    controlPoint2: NSPoint(x: startX - curl * 0.72, y: endY * 0.72)
+                )
+            }
+            baseColor.withAlphaComponent(0.18 * opacity).setStroke()
+            tentacles.lineWidth = 1.25 + jellyfish.depth * 0.8
+            tentacles.stroke()
+            highlightColor.withAlphaComponent(0.56 * opacity).setStroke()
+            tentacles.lineWidth = 0.3 + jellyfish.depth * 0.24
+            tentacles.stroke()
+
+            let oralArms = NSBezierPath()
+            oralArms.lineCapStyle = .round
+            for direction in [CGFloat(-1), CGFloat(1)] {
+                let phase = jellyfish.pulsePhase * 0.58 + jellyfish.tentaclePhase + direction
+                oralArms.move(to: NSPoint(x: direction * bellWidth * 0.13, y: bellHeight * 0.02))
+                oralArms.curve(
+                    to: NSPoint(x: direction * size * 0.16 + sin(phase) * size * 0.2, y: -tentacleLength * 0.74),
+                    controlPoint1: NSPoint(x: direction * size * 0.42, y: -tentacleLength * 0.2),
+                    controlPoint2: NSPoint(x: -direction * size * 0.14, y: -tentacleLength * 0.52)
+                )
+            }
+            coreColor.withAlphaComponent(0.28 * opacity).setStroke()
+            oralArms.lineWidth = 1.4 + jellyfish.depth * 0.9
+            oralArms.stroke()
+            highlightColor.withAlphaComponent(0.38 * opacity).setStroke()
+            oralArms.lineWidth = 0.34 + jellyfish.depth * 0.3
+            oralArms.stroke()
+
+            let bell = NSBezierPath()
+            bell.move(to: NSPoint(x: -bellWidth * 0.5, y: 0))
+            bell.curve(
+                to: NSPoint(x: bellWidth * 0.5, y: 0),
+                controlPoint1: NSPoint(x: -bellWidth * 0.42, y: bellHeight * 0.9),
+                controlPoint2: NSPoint(x: bellWidth * 0.42, y: bellHeight * 0.9)
+            )
+            bell.curve(
+                to: NSPoint(x: bellWidth * 0.25, y: -bellHeight * 0.08),
+                controlPoint1: NSPoint(x: bellWidth * 0.46, y: -bellHeight * 0.05),
+                controlPoint2: NSPoint(x: bellWidth * 0.34, y: -bellHeight * 0.12)
+            )
+            bell.curve(
+                to: NSPoint(x: 0, y: -bellHeight * 0.02),
+                controlPoint1: NSPoint(x: bellWidth * 0.17, y: -bellHeight * 0.02),
+                controlPoint2: NSPoint(x: bellWidth * 0.08, y: bellHeight * 0.02)
+            )
+            bell.curve(
+                to: NSPoint(x: -bellWidth * 0.25, y: -bellHeight * 0.08),
+                controlPoint1: NSPoint(x: -bellWidth * 0.08, y: bellHeight * 0.02),
+                controlPoint2: NSPoint(x: -bellWidth * 0.17, y: -bellHeight * 0.02)
+            )
+            bell.curve(
+                to: NSPoint(x: -bellWidth * 0.5, y: 0),
+                controlPoint1: NSPoint(x: -bellWidth * 0.34, y: -bellHeight * 0.12),
+                controlPoint2: NSPoint(x: -bellWidth * 0.46, y: -bellHeight * 0.05)
+            )
+            bell.close()
+
+            NSGraphicsContext.saveGraphicsState()
+            bell.addClip()
+            NSGradient(
+                starting: highlightColor.withAlphaComponent(0.52 * opacity),
+                ending: baseColor.withAlphaComponent(0.18 * opacity)
+            )?.draw(in: bell.bounds, angle: 90)
+            NSGraphicsContext.restoreGraphicsState()
+            highlightColor.withAlphaComponent(0.8 * opacity).setStroke()
+            bell.lineWidth = 0.45 + jellyfish.depth * 0.32
+            bell.stroke()
+
+            let innerBell = NSBezierPath()
+            for direction in [CGFloat(-1), -0.45, 0, 0.45, 1] {
+                innerBell.move(to: NSPoint(x: direction * bellWidth * 0.08, y: bellHeight * 0.68))
+                innerBell.curve(
+                    to: NSPoint(x: direction * bellWidth * 0.34, y: 0),
+                    controlPoint1: NSPoint(x: direction * bellWidth * 0.16, y: bellHeight * 0.52),
+                    controlPoint2: NSPoint(x: direction * bellWidth * 0.28, y: bellHeight * 0.22)
+                )
+            }
+            highlightColor.withAlphaComponent(0.38 * opacity).setStroke()
+            innerBell.lineWidth = 0.24 + jellyfish.depth * 0.18
+            innerBell.stroke()
+
+            coreColor.withAlphaComponent(0.5 * opacity).setFill()
+            NSBezierPath(
+                ovalIn: NSRect(
+                    x: -size * 0.2,
+                    y: bellHeight * 0.18,
+                    width: size * 0.4,
+                    height: bellHeight * 0.28
+                )
+            ).fill()
+
             NSGraphicsContext.restoreGraphicsState()
         }
     }

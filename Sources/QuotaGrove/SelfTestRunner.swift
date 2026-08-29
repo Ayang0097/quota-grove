@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 
 enum SelfTestRunner {
@@ -12,13 +13,13 @@ enum SelfTestRunner {
         var report = Report()
 
         let boundaries: [(Double, QuotaTheme)] = [
-            (50, .forest),
-            (49, .autumn),
-            (20, .autumn),
-            (19, .apocalypse),
-            (3, .apocalypse),
-            (2, .wasteland),
-            (1, .wasteland),
+            (100, .forest),
+            (70, .forest),
+            (69, .autumn),
+            (40, .autumn),
+            (39, .apocalypse),
+            (10, .apocalypse),
+            (9, .wasteland),
             (0, .wasteland)
         ]
         for (percent, expected) in boundaries {
@@ -36,6 +37,7 @@ enum SelfTestRunner {
         expect(QuotaTheme.forest.progressAccent != QuotaTheme.forest.accent, "森林进度条应使用比边框更鲜明的绿色", report: &report)
         expect(QuotaTheme.autumn.progressAccent == QuotaTheme.autumn.accent, "森林之外的主题应保留原有进度色", report: &report)
         expect(QuotaCardView.ambientLeafInterval == 3, "环境落叶应每 3 秒检查并播放一次", report: &report)
+        testCustomBackgroundStore(report: &report)
 
         do {
             let line = Data(#"{"timestamp":"2026-08-27T07:48:05.500Z","payload":{"type":"token_count","rate_limits":{"limit_id":"codex","primary":{"used_percent":31.0,"window_minutes":10080,"resets_at":1788405013},"secondary":{"used_percent":8,"window_minutes":300,"resets_at":1787810000},"plan_type":"prolite"}}}"#.utf8)
@@ -178,6 +180,160 @@ enum SelfTestRunner {
         departingLeaf.position.y = 1.6
         expect(departingLeaf.departureProgress(in: 80) > 0.99, "落叶接近底部时应完成景深退场", report: &report)
 
+        let astralThemeKinds: [(QuotaTheme, AstralMoteKind)] = [
+            (.forest, .spore),
+            (.autumn, .stardust),
+            (.apocalypse, .ember),
+            (.wasteland, .frost)
+        ]
+        for (theme, expectedKind) in astralThemeKinds {
+            var astral = AstralParticleSystem()
+            astral.emitAmbient(for: theme, in: CGSize(width: 200, height: 80))
+            expect(
+                astral.motes.count == AstralParticleSystem.ambientMoteCount,
+                "星屿生态舱环境动效应使用固定轻量粒子数",
+                report: &report
+            )
+            expect(
+                astral.motes.allSatisfy { $0.kind == expectedKind },
+                "星屿生态舱粒子形态应跟随额度主题",
+                report: &report
+            )
+            let initialPositions = astral.motes.map(\.position)
+            astral.advance(by: 1.0 / 15.0)
+            expect(astral.motes.map(\.position) != initialPositions, "星屿生态舱粒子应持续运动", report: &report)
+        }
+
+        var astralBurst = AstralParticleSystem()
+        astralBurst.emitManualBurst(for: .apocalypse, in: CGSize(width: 200, height: 80))
+        expect(
+            astralBurst.motes.count == AstralParticleSystem.manualBurstMoteCount,
+            "双击星屿生态舱应触发完整粒子风暴",
+            report: &report
+        )
+        expect(
+            AstralParticleSystem.manualBurstWaveCounts == [4, 9, 16, 9, 4],
+            "星屿生态舱粒子风暴应按先少后多再少释放",
+            report: &report
+        )
+        expect(astralBurst.motes.allSatisfy { $0.kind == .ember }, "末日阶段粒子风暴应使用红色火星", report: &report)
+
+        let beaconThemeKinds: [(QuotaTheme, BeaconBirdKind)] = [
+            (.forest, .azure),
+            (.autumn, .golden),
+            (.apocalypse, .storm),
+            (.wasteland, .frost)
+        ]
+        for (theme, expectedKind) in beaconThemeKinds {
+            var beacon = BeaconParticleSystem()
+            beacon.emitAmbient(for: theme, in: CGSize(width: 200, height: 80))
+            expect(
+                beacon.birds.count == BeaconParticleSystem.ambientMoteCount,
+                "云海灯塔环境动效应使用固定轻量飞鸟数",
+                report: &report
+            )
+            expect(
+                beacon.birds.allSatisfy { $0.kind == expectedKind },
+                "云海灯塔飞鸟颜色与状态应跟随额度主题",
+                report: &report
+            )
+            let initialPositions = beacon.birds.map(\.position)
+            for _ in 0..<8 { beacon.advance(by: 1.0 / 15.0) }
+            expect(beacon.birds.map(\.position) != initialPositions, "云海灯塔飞鸟应持续运动", report: &report)
+        }
+
+        var beaconBurst = BeaconParticleSystem()
+        beaconBurst.emitManualBurst(for: .apocalypse, in: CGSize(width: 200, height: 80))
+        expect(
+            beaconBurst.birds.count == BeaconParticleSystem.manualBurstMoteCount,
+            "双击云海灯塔应触发完整鸟群动效",
+            report: &report
+        )
+        expect(
+            BeaconParticleSystem.manualBurstWaveCounts == [2, 6, 11, 6, 2],
+            "云海灯塔鸟群应按先少后多再少释放",
+            report: &report
+        )
+        expect(beaconBurst.birds.allSatisfy { $0.kind == .storm }, "末日阶段云海灯塔应使用风暴飞鸟", report: &report)
+
+        let moonThemeKinds: [(QuotaTheme, MoonButterflyKind)] = [
+            (.forest, .pearl),
+            (.autumn, .roseGold),
+            (.apocalypse, .garnet),
+            (.wasteland, .silver)
+        ]
+        for (theme, expectedKind) in moonThemeKinds {
+            var moon = MoonButterflySystem()
+            moon.emitAmbient(for: theme, in: CGSize(width: 200, height: 80))
+            expect(
+                moon.butterflies.count == MoonButterflySystem.ambientButterflyCount,
+                "月光花房环境动效应使用固定轻量月蝶数",
+                report: &report
+            )
+            expect(
+                moon.butterflies.allSatisfy { $0.kind == expectedKind },
+                "月光花房月蝶颜色应跟随额度主题",
+                report: &report
+            )
+            let initialPositions = moon.butterflies.map(\.position)
+            for _ in 0..<8 { moon.advance(by: 1.0 / 15.0) }
+            expect(moon.butterflies.map(\.position) != initialPositions, "月光花房月蝶应持续运动", report: &report)
+        }
+
+        var moonBurst = MoonButterflySystem()
+        moonBurst.emitManualBurst(for: .apocalypse, in: CGSize(width: 200, height: 80))
+        expect(
+            moonBurst.butterflies.count == MoonButterflySystem.manualBurstButterflyCount,
+            "双击月光花房应触发完整月蝶群舞",
+            report: &report
+        )
+        expect(
+            MoonButterflySystem.manualBurstWaveCounts == [2, 6, 12, 7, 3],
+            "月光花房月蝶群舞应按先少后多再少释放",
+            report: &report
+        )
+        expect(moonBurst.butterflies.allSatisfy { $0.kind == .garnet }, "末日阶段月光花房应使用石榴红月蝶", report: &report)
+
+        let abyssalThemeKinds: [(QuotaTheme, AbyssalJellyfishKind)] = [
+            (.forest, .cyan),
+            (.autumn, .amber),
+            (.apocalypse, .garnet),
+            (.wasteland, .silver)
+        ]
+        for (theme, expectedKind) in abyssalThemeKinds {
+            var abyssal = AbyssalJellyfishSystem()
+            abyssal.emitAmbient(for: theme, in: CGSize(width: 200, height: 80))
+            expect(
+                abyssal.jellyfish.count == AbyssalJellyfishSystem.ambientJellyfishCount,
+                "深海幻境环境动效应使用固定轻量水母数",
+                report: &report
+            )
+            expect(
+                abyssal.jellyfish.allSatisfy { $0.kind == expectedKind },
+                "深海幻境水母颜色应跟随额度主题",
+                report: &report
+            )
+            let initialPositions = abyssal.jellyfish.map(\.position)
+            let initialPulse = abyssal.jellyfish.map(\.pulsePhase)
+            for _ in 0..<8 { abyssal.advance(by: 1.0 / 15.0) }
+            expect(abyssal.jellyfish.map(\.position) != initialPositions, "深海幻境水母应持续漂浮", report: &report)
+            expect(abyssal.jellyfish.map(\.pulsePhase) != initialPulse, "深海幻境水母伞体应持续收缩舒展", report: &report)
+        }
+
+        var abyssalBurst = AbyssalJellyfishSystem()
+        abyssalBurst.emitManualBurst(for: .apocalypse, in: CGSize(width: 200, height: 80))
+        expect(
+            abyssalBurst.jellyfish.count == AbyssalJellyfishSystem.manualBurstJellyfishCount,
+            "双击深海幻境应触发完整水母群游",
+            report: &report
+        )
+        expect(
+            AbyssalJellyfishSystem.manualBurstWaveCounts == [1, 4, 8, 5, 2],
+            "深海幻境水母群游应按先少后多再少释放",
+            report: &report
+        )
+        expect(abyssalBurst.jellyfish.allSatisfy { $0.kind == .garnet }, "低额阶段深海幻境应使用石榴红水母", report: &report)
+
         return report
     }
 
@@ -204,6 +360,79 @@ enum SelfTestRunner {
             expect(snapshot?.remainingPercent == 93, "大日志尾部没有额度事件时不得回退到旧文件的 28%", report: &report)
         } catch {
             report.failures.append("大日志额度回归测试：\(error.localizedDescription)")
+        }
+    }
+
+    private static func testCustomBackgroundStore(report: inout Report) {
+        let fileManager = FileManager.default
+        let directory = fileManager.temporaryDirectory
+            .appendingPathComponent("quota-grove-background-test-\(UUID().uuidString)", isDirectory: true)
+        let sourceURL = directory.appendingPathComponent("source.png")
+        let storedURL = directory.appendingPathComponent("Application Support/custom-background.png")
+        let defaultsSuite = "QuotaGrove.BackgroundTest.\(UUID().uuidString)"
+
+        do {
+            try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+            defer { try? fileManager.removeItem(at: directory) }
+            guard let defaults = UserDefaults(suiteName: defaultsSuite) else {
+                report.failures.append("创建自定义背景测试偏好")
+                return
+            }
+            defer { defaults.removePersistentDomain(forName: defaultsSuite) }
+
+            guard let bitmap = NSBitmapImageRep(
+                bitmapDataPlanes: nil,
+                pixelsWide: 8,
+                pixelsHigh: 8,
+                bitsPerSample: 8,
+                samplesPerPixel: 4,
+                hasAlpha: true,
+                isPlanar: false,
+                colorSpaceName: .deviceRGB,
+                bytesPerRow: 0,
+                bitsPerPixel: 0
+            ) else {
+                report.failures.append("创建自定义背景测试图片")
+                return
+            }
+            for x in 0..<8 {
+                for y in 0..<8 {
+                    bitmap.setColor(NSColor(calibratedRed: 0.08, green: 0.42, blue: 0.24, alpha: 1), atX: x, y: y)
+                }
+            }
+            guard let pngData = bitmap.representation(using: .png, properties: [:]) else {
+                report.failures.append("编码自定义背景测试图片")
+                return
+            }
+            try pngData.write(to: sourceURL)
+
+            let store = ThemeBackgroundStore(
+                fileManager: fileManager,
+                defaults: defaults,
+                customBackgroundURL: storedURL
+            )
+            expect(!store.hasCustomBackground, "未选择图片时应使用默认主题背景", report: &report)
+            expect(store.selectedStyle == .quotaGrove, "默认应使用额度森林背景套系", report: &report)
+            store.selectBuiltInStyle(.astralTerrarium)
+            expect(store.selectedStyle == .astralTerrarium, "星屿生态舱背景套系应可持久选择", report: &report)
+            store.selectBuiltInStyle(.cloudseaBeacon)
+            expect(store.selectedStyle == .cloudseaBeacon, "云海灯塔背景套系应可持久选择", report: &report)
+            expect(store.image(for: .forest) != nil, "云海灯塔背景套系应可加载开发资源", report: &report)
+            store.selectBuiltInStyle(.moonlitConservatory)
+            expect(store.selectedStyle == .moonlitConservatory, "月光花房背景套系应可持久选择", report: &report)
+            expect(store.image(for: .forest) != nil, "月光花房背景套系应可加载开发资源", report: &report)
+            store.selectBuiltInStyle(.abyssalReverie)
+            expect(store.selectedStyle == .abyssalReverie, "深海幻境背景套系应可持久选择", report: &report)
+            expect(store.image(for: .forest) != nil, "深海幻境背景套系应可加载开发资源", report: &report)
+            try store.installCustomBackground(from: sourceURL)
+            expect(store.hasCustomBackground, "选择图片后应保存本地自定义背景", report: &report)
+            expect(store.selectedStyle == .custom, "选择图片后应切换到自定义背景", report: &report)
+            expect(store.image(for: .forest) != nil, "已保存的自定义背景应可重新加载", report: &report)
+            try store.restoreDefaultBackground()
+            expect(!store.hasCustomBackground, "恢复默认背景应移除本地自定义图片", report: &report)
+            expect(store.selectedStyle == .quotaGrove, "恢复默认背景应切回额度森林", report: &report)
+        } catch {
+            report.failures.append("自定义背景存储：\(error.localizedDescription)")
         }
     }
 

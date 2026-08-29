@@ -14,13 +14,13 @@ public static class SelfTestRunner
 
         foreach (var (percent, expected) in new[]
         {
-            (50d, QuotaTheme.Forest),
-            (49d, QuotaTheme.Autumn),
-            (20d, QuotaTheme.Autumn),
-            (19d, QuotaTheme.Apocalypse),
-            (3d, QuotaTheme.Apocalypse),
-            (2d, QuotaTheme.Wasteland),
-            (1d, QuotaTheme.Wasteland),
+            (100d, QuotaTheme.Forest),
+            (70d, QuotaTheme.Forest),
+            (69d, QuotaTheme.Autumn),
+            (40d, QuotaTheme.Autumn),
+            (39d, QuotaTheme.Apocalypse),
+            (10d, QuotaTheme.Apocalypse),
+            (9d, QuotaTheme.Wasteland),
             (0d, QuotaTheme.Wasteland)
         })
         {

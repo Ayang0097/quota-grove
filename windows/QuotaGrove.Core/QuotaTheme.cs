@@ -14,9 +14,9 @@ public static class QuotaThemes
 {
     public static QuotaTheme Select(double remainingPercent) => remainingPercent switch
     {
-        >= 50 and <= 100 => QuotaTheme.Forest,
-        >= 20 and < 50 => QuotaTheme.Autumn,
-        >= 3 and < 20 => QuotaTheme.Apocalypse,
+        >= 70 and <= 100 => QuotaTheme.Forest,
+        >= 40 and < 70 => QuotaTheme.Autumn,
+        >= 10 and < 40 => QuotaTheme.Apocalypse,
         _ => QuotaTheme.Wasteland
     };
 

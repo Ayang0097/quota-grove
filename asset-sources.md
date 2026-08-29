@@ -25,6 +25,38 @@
 - 废土：`bg/背景百分之3以下.png`
 - 回退背景：`QuotaCardView.swift` 中独立绘制的 Core Graphics/AppKit 路径和渐变，仅在正式图片缺失时使用。
 
+## 星屿生态舱背景套系
+
+- 文件：`Assets/BackgroundSets/AstralTerrarium/forest.png`、`autumn.png`、`apocalypse.png`、`wasteland.png`。
+- 来源：使用 OpenAI ImageGen 为 Quota Grove 专门生成的四张原创位图；原始输出均为 1983 × 793 px，与卡片保持约 2.5:1 比例。
+- 统一视觉：同一座玻璃罩微缩生态岛，保留左上和右上暗部信息区，不包含文字、Logo 或第三方品牌标识。
+- 阶段变化：森林为青绿发光生态舱，秋林为铜金衰退生态舱，末日为红紫裂变生态舱，废土为银灰冻结生态舱。
+- 配套动效：上升孢子、金色星尘、逆风火屑和六向霜晶均由 `AstralParticleSystem.swift` 与 `QuotaCardView.swift` 实时绘制，不使用第三方粒子素材包。
+
+## 云海灯塔背景套系
+
+- 文件：`Assets/BackgroundSets/CloudseaBeacon/forest.png`、`autumn.png`、`apocalypse.png`、`wasteland.png`。
+- 来源：使用 OpenAI ImageGen 为 Quota Grove 专门生成的四张原创位图；原始输出均为 1983 × 793 px，与卡片保持约 2.5:1 比例。
+- 统一视觉：同一座装饰艺术风格灯塔与悬浮石岛，保留左右上方暗部信息区，不包含文字、Logo 或第三方品牌标识。
+- 阶段变化：森林为蓝色云海与青色信标，秋林为铜金黄昏，末日为红紫雷暴，废土为银白冻结云层。
+- 配套动效：青蓝、金色、暗红和灰白四种飞鸟轮廓、扇翼状态、队形与飞行轨迹均由 `BeaconParticleSystem.swift` 与 `QuotaCardView.swift` 实时绘制，不使用第三方鸟类图片或动画素材。
+
+## 月光花房背景套系
+
+- 文件：`Assets/BackgroundSets/MoonlitConservatory/forest.png`、`autumn.png`、`apocalypse.png`、`wasteland.png`。
+- 来源：使用 OpenAI ImageGen 为 Quota Grove 专门生成的四张原创位图；原始输出均为 1983 × 793 px，与卡片保持约 2.5:1 比例。
+- 统一视觉：同一座新艺术风格月夜玻璃花房，保留左右上方暗部信息区和底部进度条区域，不包含文字、Logo、人物或第三方品牌标识。
+- 阶段变化：森林为珍珠薰衣草与雾粉花朵，秋林为暗铜和玫瑰金暮色，末日为石榴红藤蔓与蚀月，废土为银灰冰晶与冻结玻璃。
+- 配套动效：珍珠浅粉、玫瑰金、石榴红和银白四种月蝶的轮廓、扇翼状态、景深与曲线轨迹均由 `MoonButterflySystem.swift` 与 `QuotaCardView.swift` 实时绘制，不使用第三方蝴蝶图片或动画素材。
+
+## 深海幻境背景套系
+
+- 文件：`Assets/BackgroundSets/AbyssalReverie/forest.png`、`autumn.png`、`apocalypse.png`、`wasteland.png`。
+- 来源：使用 OpenAI ImageGen 为 Quota Grove 专门生成并定向编辑的四张原创位图；原始输出均为 1983 × 793 px，与卡片保持约 2.5:1 比例。
+- 统一视觉：同一片无边框深海珊瑚海床和同一组水母构图，完整铺满画面，保留左右上方暗部信息区和底部进度条区域，不包含文字、Logo、人物或第三方品牌标识。
+- 阶段变化：森林为青蓝生物荧光珊瑚，秋林为铜金衰退海域，末日为石榴红暗海沟，废土为银灰白化珊瑚与冷色海雪。
+- 配套动效：青蓝、琥珀、石榴红和银白四种水母的伞体脉动、触手摆动、漂浮轨迹、景深和淡出均由 `AbyssalJellyfishSystem.swift` 与 `QuotaCardView.swift` 实时绘制，不使用第三方水母图片或动画素材。
+
 ## 落叶粒子
 
 - 文件：`Assets/Leaves/forest-*.png`、`autumn-*.png`、`apocalypse-*.png`、`wasteland-*.png`。
@@ -36,7 +68,7 @@
 
 ## README 展示图与动图
 
-- 文件：`docs/screenshots/quota-grove-themes-en-v101.png`、`docs/screenshots/quota-grove-modes-en-v101.png`、`docs/screenshots/quota-grove-leaf-animation.gif`。
-- 来源：两张 PNG 由 `Scripts/render-readme-showcase.swift` 调用应用内置的真实预览渲染器生成，再使用 Apple AppKit 合成；落叶 GIF 由应用的 `--render-leaf-frames` 逐帧渲染能力输出，再编码为动图。
-- 内容：展示四个额度主题，以及收起、展开、贴边隐藏和主题同步落叶动效。
+- 文件：`docs/screenshots/quota-grove-themes-en-v101.png`、`docs/screenshots/quota-grove-modes-en-v101.png`、`docs/screenshots/quota-grove-leaf-animation.gif`、`docs/screenshots/quota-grove-astral-terrarium-themes.png`、`docs/screenshots/quota-grove-astral-terrarium-modes.png`、`docs/screenshots/quota-grove-astral-terrarium-animation.gif`、`docs/screenshots/quota-grove-cloudsea-beacon-themes.png`、`docs/screenshots/quota-grove-cloudsea-beacon-modes.png`、`docs/screenshots/quota-grove-cloudsea-beacon-animation.gif`、`docs/screenshots/quota-grove-moonlit-conservatory-themes.png`、`docs/screenshots/quota-grove-moonlit-conservatory-modes.png`、`docs/screenshots/quota-grove-moonlit-conservatory-animation.gif`、`docs/screenshots/quota-grove-abyssal-reverie-themes.png`、`docs/screenshots/quota-grove-abyssal-reverie-modes.png`、`docs/screenshots/quota-grove-abyssal-reverie-animation.gif`。
+- 来源：PNG 由 `Scripts/render-readme-showcase.swift` 调用应用内置的真实预览渲染器生成，再使用 Apple AppKit 合成；GIF 由应用的 `--render-leaf-frames` 逐帧渲染能力输出，再编码为动图。
+- 内容：展示五套背景套系的额度阶段，以及收起、展开、贴边隐藏、主题同步落叶、星屿粒子、灯塔飞鸟、月蝶与水母动效。
 - 字体：仅使用 macOS 系统字体，不额外捆绑字体文件。

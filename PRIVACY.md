@@ -8,6 +8,7 @@ Quota Grove 的额度读取、额度缓存和卡片显示完全在本机运行�
 - 不读取 macOS 的 `~/.codex/auth.json` 或 Windows 对应数据目录中的 `auth.json`。
 - 只在 macOS 的 `~/.codex/sessions` 或 Windows 的 `%USERPROFILE%\.codex\sessions` 最近运行事件尾部筛选 `rate_limits` 字段；不解析、显示或保存对话正文。
 - 最近一次可信额度快照、卡片位置和展开状态保存在 macOS UserDefaults 或 Windows 的 `%LOCALAPPDATA%\QuotaGrove\settings.json`。
+- 用户在 macOS 主动选择自定义背景后，图片会缩放并转换为 `~/Library/Application Support/Quota Grove/custom-background.png`；该文件只用于本机卡片绘制，不会上传。选择“恢复默认背景”时会删除这份应用内副本，不影响原始图片。
 - 只有用户主动开启“跟随当地天气”后，macOS 才会通过系统权限请求当前位置。
 - 获取到的经纬度会先四舍五入到两位小数（约公里级），不会保存或发送原始精确坐标。
 - 模糊化坐标会发送到 `api.open-meteo.com`，请求仅包含当前天气代码、降雨量、阵雨量和降雪量，用于判断是否显示雨效或雪效；不会随请求发送额度或 Codex 数据。

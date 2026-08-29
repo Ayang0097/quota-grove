@@ -2,6 +2,16 @@ import AppKit
 import Darwin
 import Foundation
 
+private func applyPreviewBackgroundStyle(arguments: [String]) {
+    guard
+        let index = arguments.firstIndex(of: "--background-style"),
+        arguments.indices.contains(index + 1),
+        let style = CardBackgroundStyle(rawValue: arguments[index + 1]),
+        CardBackgroundStyle.builtInStyles.contains(style)
+    else { return }
+    ThemeBackgroundStore.shared.setSessionStyleOverride(style)
+}
+
 private func printSnapshot() -> Never {
     guard let snapshot = LocalRateLimitSource().latestSnapshot() else {
         FileHandle.standardError.write(Data("未找到可信额度事件\n".utf8))
@@ -87,6 +97,7 @@ private func renderPreview(arguments: [String]) -> Never {
     let expanded = arguments.contains("--expanded")
     let stashed = arguments.contains("--stashed")
     let stashedEdge: StashedEdge = arguments.contains("--left") ? .left : .right
+    applyPreviewBackgroundStyle(arguments: arguments)
     _ = NSApplication.shared
     do {
         try PreviewRenderer.render(
@@ -115,6 +126,7 @@ private func renderLeafFrames(arguments: [String]) -> Never {
         exit(64)
     }
 
+    applyPreviewBackgroundStyle(arguments: arguments)
     _ = NSApplication.shared
     do {
         let directory = URL(fileURLWithPath: arguments[index + 3], isDirectory: true)
@@ -143,6 +155,7 @@ private func renderRainFrames(arguments: [String]) -> Never {
         exit(64)
     }
 
+    applyPreviewBackgroundStyle(arguments: arguments)
     _ = NSApplication.shared
     do {
         let directory = URL(fileURLWithPath: arguments[index + 2], isDirectory: true)
@@ -169,6 +182,7 @@ private func renderSnowFrames(arguments: [String]) -> Never {
         exit(64)
     }
 
+    applyPreviewBackgroundStyle(arguments: arguments)
     _ = NSApplication.shared
     do {
         let directory = URL(fileURLWithPath: arguments[index + 2], isDirectory: true)

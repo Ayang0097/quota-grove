@@ -15,6 +15,7 @@ private let fileManager = FileManager.default
 private let repositoryRoot = URL(fileURLWithPath: fileManager.currentDirectoryPath, isDirectory: true)
 private let binaryURL = CommandLine.arguments.dropFirst().first.map(URL.init(fileURLWithPath:))
     ?? repositoryRoot.appendingPathComponent(".build/release/QuotaGrove")
+private let previewStyle = ProcessInfo.processInfo.environment["QUOTA_GROVE_PREVIEW_STYLE"]
 private let outputDirectory = repositoryRoot.appendingPathComponent("docs/screenshots", isDirectory: true)
 private let temporaryDirectory = fileManager.temporaryDirectory
     .appendingPathComponent("quota-grove-showcase-\(ProcessInfo.processInfo.processIdentifier)", isDirectory: true)
@@ -37,6 +38,7 @@ private func runPreview(percent: Int, name: String, expanded: Bool = false, stas
     process.arguments = ["--render-preview", String(percent), outputURL.path]
         + (expanded ? ["--expanded"] : [])
         + (stashed ? ["--stashed"] : [])
+        + (previewStyle.map { ["--background-style", $0] } ?? [])
     process.standardOutput = FileHandle.nullDevice
     process.standardError = FileHandle.standardError
     try process.run()
@@ -275,17 +277,36 @@ do {
     defer { try? fileManager.removeItem(at: temporaryDirectory) }
 
     let samples = try [
-        ThemeSample(percent: 82, title: "Healthy", range: "50–100%", accent: NSColor(calibratedRed: 0.47, green: 0.88, blue: 0.67, alpha: 1), image: runPreview(percent: 82, name: "forest")),
-        ThemeSample(percent: 38, title: "Reduced", range: "20–49%", accent: NSColor(calibratedRed: 0.96, green: 0.72, blue: 0.29, alpha: 1), image: runPreview(percent: 38, name: "autumn")),
-        ThemeSample(percent: 12, title: "Low", range: "3–19%", accent: NSColor(calibratedRed: 0.94, green: 0.29, blue: 0.28, alpha: 1), image: runPreview(percent: 12, name: "apocalypse")),
-        ThemeSample(percent: 1, title: "Nearly depleted", range: "0–2%", accent: NSColor(calibratedWhite: 0.94, alpha: 1), image: runPreview(percent: 1, name: "wasteland"))
+        ThemeSample(percent: 85, title: "Healthy", range: "70–100%", accent: NSColor(calibratedRed: 0.47, green: 0.88, blue: 0.67, alpha: 1), image: runPreview(percent: 85, name: "forest")),
+        ThemeSample(percent: 55, title: "Reduced", range: "40–69%", accent: NSColor(calibratedRed: 0.96, green: 0.72, blue: 0.29, alpha: 1), image: runPreview(percent: 55, name: "autumn")),
+        ThemeSample(percent: 25, title: "Low", range: "10–39%", accent: NSColor(calibratedRed: 0.94, green: 0.29, blue: 0.28, alpha: 1), image: runPreview(percent: 25, name: "apocalypse")),
+        ThemeSample(percent: 5, title: "Nearly depleted", range: "0–9%", accent: NSColor(calibratedWhite: 0.94, alpha: 1), image: runPreview(percent: 5, name: "wasteland"))
     ]
     let collapsed = try runPreview(percent: 54, name: "collapsed")
     let expanded = try runPreview(percent: 54, name: "expanded", expanded: true)
     let stashed = try runPreview(percent: 54, name: "stashed", stashed: true)
 
-    let themeURL = outputDirectory.appendingPathComponent("quota-grove-themes-en-v101.png")
-    let modeURL = outputDirectory.appendingPathComponent("quota-grove-modes-en-v101.png")
+    let themeFilename: String
+    let modeFilename: String
+    switch previewStyle {
+    case "astralTerrarium":
+        themeFilename = "quota-grove-astral-terrarium-themes.png"
+        modeFilename = "quota-grove-astral-terrarium-modes.png"
+    case "cloudseaBeacon":
+        themeFilename = "quota-grove-cloudsea-beacon-themes.png"
+        modeFilename = "quota-grove-cloudsea-beacon-modes.png"
+    case "moonlitConservatory":
+        themeFilename = "quota-grove-moonlit-conservatory-themes.png"
+        modeFilename = "quota-grove-moonlit-conservatory-modes.png"
+    case "abyssalReverie":
+        themeFilename = "quota-grove-abyssal-reverie-themes.png"
+        modeFilename = "quota-grove-abyssal-reverie-modes.png"
+    default:
+        themeFilename = "quota-grove-themes-en-v101.png"
+        modeFilename = "quota-grove-modes-en-v101.png"
+    }
+    let themeURL = outputDirectory.appendingPathComponent(themeFilename)
+    let modeURL = outputDirectory.appendingPathComponent(modeFilename)
     try writePNG(renderThemeShowcase(samples: samples), to: themeURL)
     try writePNG(renderModeShowcase(collapsed: collapsed, expanded: expanded, stashed: stashed), to: modeURL)
 
