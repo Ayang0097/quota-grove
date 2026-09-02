@@ -15,7 +15,7 @@ private let fileManager = FileManager.default
 private let repositoryRoot = URL(fileURLWithPath: fileManager.currentDirectoryPath, isDirectory: true)
 private let binaryURL = CommandLine.arguments.dropFirst().first.map(URL.init(fileURLWithPath:))
     ?? repositoryRoot.appendingPathComponent(".build/release/QuotaGrove")
-private let previewStyle = ProcessInfo.processInfo.environment["QUOTA_GROVE_PREVIEW_STYLE"]
+private let previewStyle: String? = ProcessInfo.processInfo.environment["QUOTA_GROVE_PREVIEW_STYLE"] ?? "quotaGrove"
 private let outputDirectory = repositoryRoot.appendingPathComponent("docs/screenshots", isDirectory: true)
 private let temporaryDirectory = fileManager.temporaryDirectory
     .appendingPathComponent("quota-grove-showcase-\(ProcessInfo.processInfo.processIdentifier)", isDirectory: true)
@@ -35,7 +35,7 @@ private func runPreview(percent: Int, name: String, expanded: Bool = false, stas
     let outputURL = temporaryDirectory.appendingPathComponent("\(name).png")
     let process = Process()
     process.executableURL = binaryURL
-    process.arguments = ["--render-preview", String(percent), outputURL.path]
+    process.arguments = ["-AppleLanguages", "(en)", "--render-preview", String(percent), outputURL.path]
         + (expanded ? ["--expanded"] : [])
         + (stashed ? ["--stashed"] : [])
         + (previewStyle.map { ["--background-style", $0] } ?? [])

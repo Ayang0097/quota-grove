@@ -1,0 +1,15 @@
+name: 使用反馈与建议 / Feedback
+description: 告诉我们你想解决的实际问题 / Tell us about your workflow
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: 你想解决什么问题？/ What would help you?
+      description: 描述使用场景、现在的困难和希望的结果。Describe your workflow, the friction, and your desired outcome.
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: 使用的平台 / Platform
+      placeholder: macOS / Windows
