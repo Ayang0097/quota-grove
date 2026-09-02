@@ -1,5 +1,5 @@
 import {
-  CanvasImage,
+  Img,
   Easing,
   Interactive,
   interpolate,
@@ -49,7 +49,7 @@ export const QuotaScene = () => {
         <br />
         Your quota, as a forest that fades.
       </Interactive.Div>
-      <CanvasImage
+      <Img
         src={staticFile(`cards/${states[active]}.png`)}
         style={{
           position: "absolute",

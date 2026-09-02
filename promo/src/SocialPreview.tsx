@@ -1,4 +1,4 @@
-import { AbsoluteFill, CanvasImage, Interactive, staticFile } from "remotion";
+import { AbsoluteFill, Img, Interactive, staticFile } from "remotion";
 
 export const SocialPreview = () => (
   <AbsoluteFill
@@ -61,7 +61,7 @@ export const SocialPreview = () => (
     >
       Your quota, as a forest that fades.
     </Interactive.Div>
-    <CanvasImage
+    <Img
       src={staticFile("cards/85.png")}
       style={{
         position: "absolute",
@@ -71,7 +71,7 @@ export const SocialPreview = () => (
         height: 212,
       }}
     />
-    <CanvasImage
+    <Img
       src={staticFile("cards/5.png")}
       style={{
         position: "absolute",

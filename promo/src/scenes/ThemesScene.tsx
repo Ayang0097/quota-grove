@@ -1,5 +1,5 @@
 import {
-  CanvasImage,
+  Img,
   Easing,
   Interactive,
   interpolate,
@@ -71,7 +71,7 @@ export const ThemesScene = () => {
               height: 184,
             }}
           >
-            <CanvasImage
+            <Img
               src={staticFile(`cards/${file}.png`)}
               style={{ width: 360, height: 144 }}
             />

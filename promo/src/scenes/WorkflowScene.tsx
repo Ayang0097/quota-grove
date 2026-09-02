@@ -1,5 +1,5 @@
 import {
-  CanvasImage,
+  Img,
   Easing,
   Interactive,
   interpolate,
@@ -37,7 +37,7 @@ export const WorkflowScene = () => {
       >
         Click for details. Hover to reveal. Keep your workspace clear.
       </Interactive.Div>
-      <CanvasImage
+      <Img
         src={staticFile("cards/55.png")}
         style={{
           position: "absolute",
@@ -51,7 +51,7 @@ export const WorkflowScene = () => {
           }),
         }}
       />
-      <CanvasImage
+      <Img
         src={staticFile("cards/expanded.png")}
         style={{
           position: "absolute",
@@ -79,7 +79,7 @@ export const WorkflowScene = () => {
           borderRadius: "22px 0 0 22px",
         }}
       >
-        <CanvasImage
+        <Img
           src={staticFile("cards/stashed.png")}
           style={{
             position: "absolute",

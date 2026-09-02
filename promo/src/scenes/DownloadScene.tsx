@@ -1,5 +1,5 @@
 import {
-  CanvasImage,
+  Img,
   Easing,
   Interactive,
   interpolate,
@@ -37,7 +37,7 @@ export const DownloadScene = () => {
       >
         读取本机记录 · 不需要 API Key · 不消耗模型 Token
       </Interactive.Div>
-      <CanvasImage
+      <Img
         src={staticFile("cards/85.png")}
         style={{
           position: "absolute",
